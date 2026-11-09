@@ -59,8 +59,18 @@ function isFutureDate(dateString) {
   return dt.getTime() >= today.getTime();
 }
 
-function getStatusStyles(status) {
-  switch (String(status).toLowerCase()) {
+function getStatusStyles(status, isPast = false) {
+  const s = String(status).toLowerCase();
+  
+  // If the booking is in the past and it was Confirmed, we show it as "Used"
+  if (isPast && s === "confirmed") {
+    return { 
+      className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700", 
+      label: "Used" 
+    };
+  }
+
+  switch (s) {
     case "pending":
       return { className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", label: "Pending" };
     case "confirmed":
@@ -357,10 +367,14 @@ export default function BookingStatusPage({ user, onLogout }) {
           ) : (
             <ul className="space-y-3">
               {visible.map((b) => {
-                const badge = getStatusStyles(b.status);
-                const statusKey = normalizeStatus(b.status);
-                const cancellable = statusKey === "Confirmed"; // Only Confirmed can be cancelled
                 const future = isFutureDate(b.date);
+                const isPast = !future;
+                
+                // Pass the isPast flag to the badge logic
+                const badge = getStatusStyles(b.status, isPast);
+                const statusKey = normalizeStatus(b.status);
+                const cancellable = statusKey === "Confirmed" && future; 
+                
                 const highlighted = highlightId !== null && String(b.bookingId) === highlightId;
                 const isCancelling = cancellingId === b.bookingId;
 
@@ -413,23 +427,20 @@ export default function BookingStatusPage({ user, onLogout }) {
                           : ""}
                       </span>
 
-                      {cancellable &&
-                        (future ? (
-                          <button
-                            type="button"
-                            onClick={() => handleCancel(b)}
-                            disabled={isCancelling}
-                            aria-label={`Cancel booking for ${b.resourceName}`}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-600 dark:border-red-500 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isCancelling && (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                            )}
-                            Cancel
-                          </button>
-                        ) : (
-                          <span className="text-xs text-slate-400 dark:text-slate-500">Past</span>
-                        ))}
+                      {cancellable && (
+                        <button
+                          type="button"
+                          onClick={() => handleCancel(b)}
+                          disabled={isCancelling}
+                          aria-label={`Cancel booking for ${b.resourceName}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-600 dark:border-red-500 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isCancelling && (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                          )}
+                          Cancel
+                        </button>
+                      )}
                     </div>
                   </li>
                 );
