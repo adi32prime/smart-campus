@@ -12,6 +12,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
+import CampusMap from "../components/CampusMap";
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                           */
@@ -45,6 +46,14 @@ const DEPT_IDS_BY_NAME = { CSE: "A1", Electrical: "B1", AIML: "C1", Mechanical: 
 const TYPE_IDS_BY_NAME = {
   Lab: 1, Labs: 1, Classroom: 2, Classrooms: 2,
   "Conference Hall": 3, "Conference Halls": 3,
+};
+
+// Fallback starting nodes for direct bookings based on department
+const DEPT_NODE_MAP = {
+  A1: "N4", // CSE
+  B1: "N6", // Electrical
+  C1: "N7", // AIML
+  D1: "N8", // Mechanical
 };
 
 const NOTES_MAX = 200;
@@ -125,6 +134,7 @@ export default function BookingFormPage({ user, onLogout }) {
   const date = searchParams.get("date");
   const startTime = searchParams.get("startTime");
   const endTime = searchParams.get("endTime");
+  const urlSourceNodeId = searchParams.get("sourceNodeId");
   const isWaitlistMode = searchParams.get("waitlist") === "1";
   const missingParams = !date || !startTime || !endTime;
 
@@ -137,6 +147,10 @@ export default function BookingFormPage({ user, onLogout }) {
   const [loadError, setLoadError] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+
+  // State for the map
+  const [mapPath, setMapPath] = useState([]);
+  const [actualSourceNode, setActualSourceNode] = useState(null);
 
   useEffect(() => {
     if (missingParams) return;
@@ -164,6 +178,43 @@ export default function BookingFormPage({ user, onLogout }) {
     load();
     return () => controller.abort();
   }, [resourceId, missingParams, reloadKey]);
+
+  // Fetch the path for the map once we have the resource
+  useEffect(() => {
+    if (!resource) return;
+    
+    // Determine source: URL > Department Node > Fallback to Main Gate (N1)
+    let source = urlSourceNodeId;
+    if (!source) {
+      const deptName = resource.departmentName;
+      const deptId = deptName ? DEPT_IDS_BY_NAME[deptName] : undefined;
+      source = DEPT_NODE_MAP[deptId] || "N1"; 
+    }
+    
+    setActualSourceNode(source);
+
+    const dest = resource.roomNumber; // The node ID for the resource
+    
+    async function fetchRoute() {
+      try {
+        const res = await fetch("/api/route", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sourceNodeId: source, destNodeId: dest }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.path) {
+            setMapPath(data.path);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load map path", err);
+      }
+    }
+
+    fetchRoute();
+  }, [resource, urlSourceNodeId]);
 
   function clearError(field) {
     setErrors((prev) => {
@@ -269,7 +320,6 @@ export default function BookingFormPage({ user, onLogout }) {
           </Link>
 
           <div className="flex items-center gap-3">
-            {/* ADDED THEME TOGGLE HERE */}
             <ThemeToggle />
             
             <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">
@@ -529,34 +579,16 @@ export default function BookingFormPage({ user, onLogout }) {
               )}
             </div>
 
-            {/* RIGHT: sidebar */}
+            {/* RIGHT: Sidebar with Map */}
             <aside className="space-y-6 lg:col-span-2">
-              <section aria-labelledby="how-heading" className={cardClass}>
-                <h2
-                  id="how-heading"
-                  className="mb-3 flex items-center gap-2 text-sm font-semibold"
-                >
-                  <Info className="h-4 w-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
-                  How this works
-                </h2>
-                <ol className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
-                  {[
-                    "DSA engine preprocesses your request and checks campus connectivity.",
-                    "OS scheduler runs FCFS + Priority based on your selected reason.",
-                    "DBMS commits the booking and updates resource status.",
-                  ].map((text, i) => (
-                    <li key={i} className="flex gap-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-900/50 text-xs font-semibold text-indigo-700 dark:text-indigo-400">
-                        {i + 1}
-                      </span>
-                      <span>{text}</span>
-                    </li>
-                  ))}
-                </ol>
-                <p className="mt-4 flex items-center gap-1.5 border-t border-slate-200 dark:border-slate-700 pt-3 text-xs text-slate-500 dark:text-slate-400">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" aria-hidden="true" />
-                  Typical response time: &lt; 3 seconds
-                </p>
+              <section aria-labelledby="map-heading" className={`${cardClass} flex flex-col h-[400px]`}>
+                <h2 id="map-heading" className="sr-only">Campus Route</h2>
+                <CampusMap 
+                  userNodeId={actualSourceNode || "N1"}
+                  selectedNodeId={resource?.roomNumber}
+                  path={mapPath}
+                  className="flex-1"
+                />
               </section>
 
               {priority && (

@@ -13,7 +13,8 @@ import notificationsRouter from './routes/notifications.js';
 import { registerSseRoute } from './sse.js';
 import adminRouter from './routes/admin.js';
 import adminStatsRouter from './routes/admin-stats.js';
-
+import routeRouter from './routes/route.js';
+import routeAllRouter from './routes/route-all.js';
 dotenv.config();
 
 const app = express();
@@ -37,6 +38,8 @@ app.use('/api/resources', resourcesRouter);
 app.use('/api/campus-nodes', campusNodesRouter);
 app.use('/api/bookings', bookingsRouter);
 app.use('/api/search', searchRouter);
+app.use('/api/route', routeRouter);
+app.use('/api/route-all', routeAllRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/admin', adminStatsRouter);
 app.use('/api/admin', adminRouter);

@@ -4,12 +4,11 @@ import pool from '../db.js';
 const router = express.Router();
 
 // GET /api/campus-nodes
-// Returns the full list of campus nodes for the source location dropdown.
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT NodeId AS nodeId, NodeName AS nodeName, NodeType AS nodeType, Status AS status
-         FROM CAMPUS_NODE
+         FROM campus_node
         ORDER BY NodeId`
     );
 
