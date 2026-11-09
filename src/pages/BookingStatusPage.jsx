@@ -65,7 +65,7 @@ function getStatusStyles(status, isPast = false) {
   // If the booking is in the past and it was Confirmed, we show it as "Used"
   if (isPast && s === "confirmed") {
     return { 
-      className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700", 
+      className: "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300 border border-teal-200 dark:border-teal-800", 
       label: "Used" 
     };
   }
@@ -73,7 +73,7 @@ function getStatusStyles(status, isPast = false) {
   // If the booking is in the past and it was Waitlisted, we show it as "Expired"
   if (isPast && s === "waitlisted") {
     return { 
-      className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700", 
+      className: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border border-orange-200 dark:border-orange-800", 
       label: "Expired" 
     };
   }
@@ -430,7 +430,7 @@ export default function BookingStatusPage({ user, onLogout }) {
                     <div className="flex shrink-0 items-center justify-between gap-3 sm:flex-col sm:items-end">
                       <span className={`rounded-full px-3 py-1 text-xs font-medium ${badge.className}`}>
                         {badge.label}
-                        {statusKey === "Waitlisted" && b.waitlistPosition
+                        {!isPast && statusKey === "Waitlisted" && b.waitlistPosition
                           ? ` #${b.waitlistPosition}`
                           : ""}
                       </span>

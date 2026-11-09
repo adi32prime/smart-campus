@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bell, X, Inbox, Calendar, Clock } from 'lucide-react';
 import useSSE from '../hooks/useSSE';
+import { useNavigate } from 'react-router-dom';
 
 export default function NotificationBell({ userId }) {
+  const navigate = useNavigate(); 
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [bookings, setBookings] = useState([]); // Store user's bookings to match IDs
@@ -166,7 +168,24 @@ export default function NotificationBell({ userId }) {
                   return (
                     <li
                       key={n.notificationId}
-                      className={`px-4 py-3 transition-colors ${
+                      onClick={() => {
+                        // 1. Mark as read immediately in the UI
+                        setNotifications((prev) => prev.map(item => 
+                          item.notificationId === n.notificationId ? { ...item, isRead: 1 } : item
+                        ));
+                        if (!n.isRead) setUnread((u) => Math.max(0, u - 1));
+
+                        // 2. Close the dropdown
+                        setOpen(false);
+
+                        // 3. Navigate to the specific booking (highlight it)
+                        if (n.bookingId) {
+                          navigate(`/dashboard/bookings?id=${n.bookingId}`);
+                        } else {
+                          navigate('/dashboard/bookings');
+                        }
+                      }}
+                      className={`cursor-pointer px-4 py-3 transition-colors ${
                         n.isRead 
                           ? 'bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/50' 
                           : 'bg-indigo-50/50 hover:bg-indigo-50 dark:bg-indigo-900/10 dark:hover:bg-indigo-900/30'
