@@ -7,14 +7,6 @@ const router = express.Router();
 
 // ----------------------------------------------------------------
 // POST /api/bookings
-// Body: { userId, resourceId, date, startTime, endTime,
-//         reasonId, reasonLabel, notes }
-//
-// Flow (no Team B involvement):
-//   1. Resolve resourceId → labId (node id like "L1")
-//   2. Map reason → priority
-//   3. Call Team A /schedule → Team A writes directly to MySQL
-//   4. Return Team A's response { bookingId, status, waitlistPosition, message }
 // ----------------------------------------------------------------
 router.post('/', async (req, res) => {
   const {
@@ -34,45 +26,72 @@ router.post('/', async (req, res) => {
     });
   }
 
-  // Resolve resource's campus node (labId Team A uses: L1, C1, CH1...)
-  const nodeInfo = await getResourceNode(resourceId);
-  if (!nodeInfo || !nodeInfo.nodeId) {
-    return res.status(400).json({
-      message: `No campus node mapped for resource ${resourceId}`,
-    });
+  // --- NEW: BACKEND TIME VALIDATION ---
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+
+  // If booking for today, ensure the time hasn't passed
+  if (date === todayStr) {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const slotTime = new Date();
+    slotTime.setHours(hours, minutes, 0, 0);
+
+    if (slotTime < now) {
+      return res.status(400).json({
+        message: 'Cannot book a time slot that has already passed today.',
+        status: 'Rejected'
+      });
+    }
   }
-  const labId = nodeInfo.nodeId;
+  // ------------------------------------
 
-  const priority = priorityFromReason(reasonId);
-  const purpose = [reasonLabel, notes].filter(Boolean).join(' — ').slice(0, 255) || 'Booking';
+  try {
+    // Resolve resource's campus node (labId Team A uses: L1, C1, CH1...)
+    const nodeInfo = await getResourceNode(resourceId);
+    if (!nodeInfo || !nodeInfo.nodeId) {
+      return res.status(400).json({
+        message: `No campus node mapped for resource ${resourceId}`,
+      });
+    }
+    const labId = nodeInfo.nodeId;
 
-  const result = await callScheduler({
-    userId: Number(userId),
-    labId,
-    date,
-    startTime,
-    endTime,
-    purpose,
-    priority,
-  });
+    const priority = priorityFromReason(reasonId);
+    const purpose = [reasonLabel, notes].filter(Boolean).join(' — ').slice(0, 255) || 'Booking';
 
-  if (!result.ok) {
-    // Team A rejected — pass through the message and reason
-    return res.status(409).json({
-      message: result.data?.message || result.error || 'Booking rejected',
-      status: result.data?.status || 'Rejected',
+    const result = await callScheduler({
+      userId: Number(userId),
+      labId,
+      date,
+      startTime,
+      endTime,
+      purpose,
+      priority,
     });
-  }
 
-  return res.status(201).json({
-    bookingId: result.data.bookingId,
-    status: result.data.status,
-    waitlistPosition: result.data.waitlistPosition || 0,
-    priority: result.data.priority || priority,
-    message: result.data.message,
-    labId,
-    resourceName: nodeInfo.resourceName,
-  });
+    if (!result.ok) {
+      // Team A rejected — pass through the message and reason
+      return res.status(409).json({
+        message: result.data?.message || result.error || 'Booking rejected',
+        status: result.data?.status || 'Rejected',
+      });
+    }
+
+    return res.status(201).json({
+      bookingId: result.data.bookingId,
+      status: result.data.status,
+      waitlistPosition: result.data.waitlistPosition || 0,
+      priority: result.data.priority || priority,
+      message: result.data.message,
+      labId,
+      resourceName: nodeInfo.resourceName,
+    });
+  } catch (err) {
+    console.error('POST /api/bookings error:', err);
+    res.status(500).json({ message: 'Failed to process booking' });
+  }
 });
 
 // ----------------------------------------------------------------
@@ -123,9 +142,6 @@ router.get('/', async (req, res) => {
 
 // ----------------------------------------------------------------
 // POST /api/bookings/:id/cancel
-//   1. Cancel via DB stored procedure
-//   2. Look up resource slot/date so we can promote
-//   3. Call Team A /promote
 // ----------------------------------------------------------------
 router.post('/:id/cancel', async (req, res) => {
   const { id } = req.params;

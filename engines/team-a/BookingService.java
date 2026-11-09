@@ -104,6 +104,10 @@ public class BookingService {
                         
                         conn.commit();
                         Db.insertAudit(userId, "CREATE_BOOKING", "BOOKING", id, "Confirmed priority=" + priority);
+                        
+                        // ADD THIS LINE: Send a notification to the user who just booked!
+                        Db.insertNotification(userId, id, "Your booking for " + labId + " on " + date + " is confirmed.");
+                        
                         r.bookingId = id;
                         r.status = "Confirmed";
                         r.message = "Booking confirmed";

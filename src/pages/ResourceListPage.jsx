@@ -196,6 +196,8 @@ export default function ResourceListPage({ user, onLogout }) {
     "rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-800 dark:text-slate-200 " +
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
 
+  const noSlotsLeft = slots.length === 0;
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300">
       {/* Top bar */}
@@ -214,7 +216,6 @@ export default function ResourceListPage({ user, onLogout }) {
           </Link>
 
           <div className="flex items-center gap-3">
-            {/* ADDED THEME TOGGLE HERE */}
             <ThemeToggle />
             
             <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">
@@ -299,10 +300,10 @@ export default function ResourceListPage({ user, onLogout }) {
                 value={slotIndex}
                 onChange={(e) => setSlotIndex(Number(e.target.value))}
                 className={fieldClass}
-                disabled={slots.length === 0}
+                disabled={noSlotsLeft}
               >
-                {slots.length === 0 ? (
-                  <option value="">No slots remaining for today</option>
+                {noSlotsLeft ? (
+                  <option value="">No slots remaining</option>
                 ) : (
                   slots.map((slot, i) => (
                     <option key={slot.start} value={i}>
@@ -339,7 +340,15 @@ export default function ResourceListPage({ user, onLogout }) {
 
         {/* Resource list */}
         <div aria-busy={loading}>
-          {loading ? (
+          {noSlotsLeft ? (
+            <div className="flex flex-col items-center rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-12 text-center">
+              <AlertCircle className="mb-3 h-10 w-10 text-amber-500" aria-hidden="true" />
+              <p className="text-lg font-semibold text-amber-800 dark:text-amber-400">Time is up for today</p>
+              <p className="mt-1 text-sm text-amber-700 dark:text-amber-500">
+                All time slots for today have passed. Please select a future date to see availability.
+              </p>
+            </div>
+          ) : loading ? (
             <div className="space-y-3">
               {[0, 1, 2, 3, 4].map((i) => (
                 <div

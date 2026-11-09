@@ -70,6 +70,14 @@ function getStatusStyles(status, isPast = false) {
     };
   }
 
+  // If the booking is in the past and it was Waitlisted, we show it as "Expired"
+  if (isPast && s === "waitlisted") {
+    return { 
+      className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700", 
+      label: "Expired" 
+    };
+  }
+
   switch (s) {
     case "pending":
       return { className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", label: "Pending" };
