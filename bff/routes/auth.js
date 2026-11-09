@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import pool from '../db.js';
+import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
@@ -44,11 +45,18 @@ router.post('/login', async (req, res) => {
     if (user.Role !== role) {
       return res.status(401).json({ message: `This account is not a ${role}` });
     }
-
     // --- Password check ---
-    // NOTE: Team C's seed data stores passwords as plain text equal to the UserId.
-    // For now, do a direct comparison. Later we can hash and compare.
-    if (String(user.Password) !== String(password)) {
+    let isMatch = false;
+
+    // Check if the stored password is a bcrypt hash (starts with $2a$ or $2b$)
+    if (user.Password.startsWith('$2a$') || user.Password.startsWith('$2b$')) {
+      isMatch = await bcrypt.compare(String(password), user.Password);
+    } else {
+      // Fallback for the original seeded demo accounts (plain text)
+      isMatch = String(user.Password) === String(password);
+    }
+
+    if (!isMatch) {
       return res.status(401).json({ message: 'Invalid password' });
     }
 

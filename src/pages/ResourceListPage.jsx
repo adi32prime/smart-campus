@@ -10,6 +10,7 @@ import {
   Users,
   BookOpen,
 } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                           */
@@ -29,7 +30,6 @@ const MAX_DAYS_AHEAD = 30;
 
 const pad = (n) => String(n).padStart(2, "0");
 
-// Local-time "YYYY-MM-DD" (avoids the UTC shift that toISOString() causes)
 function toDateString(d) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
@@ -49,7 +49,6 @@ function isSunday(dateString) {
   return new Date(y, m - 1, d).getDay() === 0;
 }
 
-// Today, or Monday if today happens to be a Sunday
 function getDefaultDate() {
   const d = new Date();
   if (d.getDay() === 0) d.setDate(d.getDate() + 1);
@@ -67,7 +66,6 @@ function formatTimeRange(start, end) {
   return `${formatTime(start)} \u2013 ${formatTime(end)}`;
 }
 
-// All resource types use 1-hour slots to match the TIME_SLOT table.
 function generateSlots() {
   const slots = [];
   for (let h = DAY_START_HOUR; h < DAY_END_HOUR; h += 1) {
@@ -105,12 +103,11 @@ export default function ResourceListPage({ user, onLogout }) {
 
   const minDate = getToday();
   const maxDate = getMaxDate();
-  // Reset the slot when navigating between categories
+
   useEffect(() => {
     setSlotIndex(0);
   }, [typeId]);
 
-  // Fetch resources on mount and whenever the filters change
   useEffect(() => {
     const controller = new AbortController();
 
@@ -147,7 +144,7 @@ export default function ResourceListPage({ user, onLogout }) {
 
   function handleDateChange(e) {
     const value = e.target.value;
-    if (!value) return; // user cleared the field; keep the current date
+    if (!value) return;
 
     if (isSunday(value)) {
       setDateError("Sundays are not available");
@@ -174,13 +171,13 @@ export default function ResourceListPage({ user, onLogout }) {
   }
 
   const fieldClass =
-    "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 " +
+    "rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-800 dark:text-slate-200 " +
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300">
       {/* Top bar */}
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
+      <header className="sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors duration-300">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
           <Link
             to="/dashboard"
@@ -195,16 +192,19 @@ export default function ResourceListPage({ user, onLogout }) {
           </Link>
 
           <div className="flex items-center gap-3">
-            <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs">
+            {/* ADDED THEME TOGGLE HERE */}
+            <ThemeToggle />
+            
+            <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">
               <span className="font-medium">{user?.userId}</span>
               {user?.role && (
-                <span className="text-slate-500"> &middot; {user.role}</span>
+                <span className="text-slate-500 dark:text-slate-400"> &middot; {user.role}</span>
               )}
             </div>
             <button
               type="button"
               onClick={onLogout}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             >
               <LogOut className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Logout</span>
@@ -216,11 +216,11 @@ export default function ResourceListPage({ user, onLogout }) {
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="mb-5">
-          <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500">
+          <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
             <li>
               <Link
                 to="/dashboard"
-                className="rounded hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                className="rounded hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
               >
                 Dashboard
               </Link>
@@ -229,13 +229,13 @@ export default function ResourceListPage({ user, onLogout }) {
             <li>
               <Link
                 to={`/dashboard/department/${deptId}`}
-                className="rounded hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                className="rounded hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
               >
                 {deptName}
               </Link>
             </li>
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
-            <li aria-current="page" className="font-medium text-slate-800">
+            <li aria-current="page" className="font-medium text-slate-800 dark:text-slate-200">
               {typeName}
             </li>
           </ol>
@@ -244,16 +244,16 @@ export default function ResourceListPage({ user, onLogout }) {
         {/* Page header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs uppercase text-slate-500">{deptName}</p>
+            <p className="text-xs uppercase text-slate-500 dark:text-slate-400">{deptName}</p>
             <h1 className="text-3xl font-bold">{typeName}</h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Select a date and time to see availability
             </p>
           </div>
 
           <div className="flex gap-3">
             <div className="flex flex-1 flex-col md:flex-none">
-              <label htmlFor="booking-date" className="mb-1 text-xs text-slate-500">
+              <label htmlFor="booking-date" className="mb-1 text-xs text-slate-500 dark:text-slate-400">
                 Date
               </label>
               <input
@@ -269,7 +269,7 @@ export default function ResourceListPage({ user, onLogout }) {
               />
             </div>
             <div className="flex flex-1 flex-col md:flex-none">
-              <label htmlFor="booking-slot" className="mb-1 text-xs text-slate-500">
+              <label htmlFor="booking-slot" className="mb-1 text-xs text-slate-500 dark:text-slate-400">
                 Time Slot
               </label>
               <select
@@ -292,14 +292,14 @@ export default function ResourceListPage({ user, onLogout }) {
           <p
             id="booking-date-error"
             role="alert"
-            className="mt-2 text-xs text-red-600 md:text-right"
+            className="mt-2 text-xs text-red-600 dark:text-red-400 md:text-right"
           >
             {dateError}
           </p>
         )}
 
         {/* Legend */}
-        <div className="mt-5 mb-3 flex items-center gap-4 text-xs text-slate-500">
+        <div className="mt-5 mb-3 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
           <span className="inline-flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-green-500" aria-hidden="true" />
             Available
@@ -317,31 +317,31 @@ export default function ResourceListPage({ user, onLogout }) {
               {[0, 1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="h-20 animate-pulse rounded-xl bg-slate-200"
+                  className="h-20 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800"
                 />
               ))}
             </div>
           ) : error ? (
             <div
               role="alert"
-              className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="flex items-center gap-2 text-sm text-red-700">
+              <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
                 <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
                 Couldn&apos;t load resources. Please try again.
               </div>
               <button
                 type="button"
                 onClick={() => setReloadKey((k) => k + 1)}
-                className="self-start rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 sm:self-auto"
+                className="self-start rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 sm:self-auto"
               >
                 Retry
               </button>
             </div>
           ) : resources.length === 0 ? (
-            <div className="flex flex-col items-center rounded-xl border border-slate-200 bg-white px-4 py-12 text-center">
+            <div className="flex flex-col items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-12 text-center">
               <BookOpen className="mb-3 h-8 w-8 text-slate-400" aria-hidden="true" />
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 No resources found in this category.
               </p>
             </div>
@@ -353,9 +353,9 @@ export default function ResourceListPage({ user, onLogout }) {
                 const content = (
                   <>
                     <div className="flex min-w-0 items-center gap-4">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-indigo-50">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/50">
                         <TypeIcon
-                          className="h-6 w-6 text-indigo-600"
+                          className="h-6 w-6 text-indigo-600 dark:text-indigo-400"
                           aria-hidden="true"
                         />
                       </div>
@@ -363,7 +363,7 @@ export default function ResourceListPage({ user, onLogout }) {
                         <p className="truncate text-lg font-semibold">
                           {r.resourceName}
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           Capacity: {r.capacity}
                         </p>
                       </div>
@@ -373,14 +373,14 @@ export default function ResourceListPage({ user, onLogout }) {
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-medium ${
                           available
-                            ? "bg-green-100 text-green-700"
-                            : "bg-amber-100 text-amber-700"
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                         }`}
                       >
                         {available ? "Available" : "Occupied · Waitlist"}
                       </span>
                       <ArrowRight
-                        className="h-5 w-5 text-slate-400"
+                        className="h-5 w-5 text-slate-400 dark:text-slate-500"
                         aria-hidden="true"
                       />
                     </div>
@@ -388,8 +388,8 @@ export default function ResourceListPage({ user, onLogout }) {
                 );
 
                 const base =
-                  "flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 " +
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
+                  "flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 " +
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 transition-colors";
 
                 return (
                   <li key={r.resourceId}>
@@ -405,7 +405,7 @@ export default function ResourceListPage({ user, onLogout }) {
                           ? handleBook(r.resourceId)
                           : handleWaitlist(r.resourceId)
                       }
-                      className={`${base} cursor-pointer transition-shadow hover:border-indigo-300 hover:shadow-md`}
+                      className={`${base} cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md`}
                     >
                       {content}
                     </button>

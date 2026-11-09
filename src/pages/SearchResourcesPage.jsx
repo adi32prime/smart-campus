@@ -8,6 +8,7 @@ import {
   Loader2,
   MapPin,
 } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle"; // <-- ADDED IMPORT
 
 const RESOURCE_TYPES = [
   { value: "", label: "Any type" },
@@ -111,26 +112,30 @@ export default function SearchResourcesPage({ user, onLogout }) {
   }
 
   const fieldClass =
-    "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 " +
+    "w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 " +
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300">
+      <header className="sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors duration-300">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
           <Link to="/dashboard" className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">SC</span>
             <span className="hidden text-sm font-semibold sm:block">Smart Campus Lab &amp; Resource Optimizer</span>
           </Link>
           <div className="flex items-center gap-3">
-            <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs">
+            
+            {/* THEME TOGGLE BUTTON */}
+            <ThemeToggle />
+            
+            <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">
               <span className="font-medium">{user?.userId}</span>
-              {user?.role && <span className="text-slate-500"> &middot; {user.role}</span>}
+              {user?.role && <span className="text-slate-500 dark:text-slate-400"> &middot; {user.role}</span>}
             </div>
             <button
               type="button"
               onClick={onLogout}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             >
               <LogOut className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Logout</span>
@@ -141,22 +146,22 @@ export default function SearchResourcesPage({ user, onLogout }) {
 
       <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
         <nav aria-label="Breadcrumb" className="mb-5">
-          <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500">
-            <li><Link to="/dashboard" className="rounded hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600">Dashboard</Link></li>
+          <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+            <li><Link to="/dashboard" className="rounded hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600">Dashboard</Link></li>
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
-            <li aria-current="page" className="font-medium text-slate-800">Search Resources</li>
+            <li aria-current="page" className="font-medium text-slate-800 dark:text-slate-200">Search Resources</li>
           </ol>
         </nav>
 
         <div className="mb-6">
-          <p className="text-xs uppercase text-slate-500">Find a resource</p>
+          <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Find a resource</p>
           <h1 className="text-3xl font-bold">Search available resources</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Pick a time, type, minimum capacity, and where you are now. Results are sorted by walking distance.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 sm:p-6 transition-colors">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium">Date</label>
@@ -202,7 +207,7 @@ export default function SearchResourcesPage({ user, onLogout }) {
 
             <div className="sm:col-span-2">
               <label className="mb-1 flex items-center gap-1.5 text-sm font-medium">
-                <MapPin className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                <MapPin className="h-4 w-4 text-slate-500 dark:text-slate-400" aria-hidden="true" />
                 Your location
               </label>
               <select value={sourceNodeId} onChange={(e) => setSourceNodeId(e.target.value)} className={fieldClass}>
@@ -214,7 +219,7 @@ export default function SearchResourcesPage({ user, onLogout }) {
           </div>
 
           {error && (
-            <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {error}
             </div>

@@ -11,6 +11,7 @@ import {
   Users,
   BookOpen,
 } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
 
 // Temporary lookup until the backend provides department names.
 const DEPT_NAMES = {
@@ -30,7 +31,7 @@ function TopBar({ user, onLogout }) {
   const RoleIcon = user?.role === "Faculty" ? BookOpen : GraduationCap;
 
   return (
-    <header className="sticky top-0 z-10 bg-white border-b border-slate-200">
+    <header className="sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 transition-colors duration-300">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
         <Link
           to="/dashboard"
@@ -43,9 +44,11 @@ function TopBar({ user, onLogout }) {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm">
-            <span className="text-slate-600">ID: {user?.userId}</span>
-            <span className="hidden sm:inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                    <ThemeToggle />
+
+          <div className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-2.5 py-1.5 text-sm">
+            <span className="text-slate-600 dark:text-slate-300">ID: {user?.userId}</span>
+            <span className="hidden sm:inline-flex items-center gap-1 rounded-md bg-indigo-50 dark:bg-indigo-900/50 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-400">
               <RoleIcon className="h-3 w-3" aria-hidden="true" />
               {user?.role}
             </span>
@@ -53,7 +56,7 @@ function TopBar({ user, onLogout }) {
           <button
             type="button"
             onClick={onLogout}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
             <span className="hidden sm:inline">Logout</span>
@@ -104,7 +107,7 @@ export default function DepartmentPage({ user, onLogout }) {
   }, [loadTypes]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col transition-colors duration-300">
       <TopBar user={user} onLogout={onLogout} />
 
       <main className="flex-1 mx-auto w-full max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
@@ -181,25 +184,25 @@ export default function DepartmentPage({ user, onLogout }) {
                     navigate(`/dashboard/department/${deptId}/${type.typeId}`)
                   }
                   aria-label={`Open ${type.typeName} category`}
-                  className="group flex min-h-[11rem] cursor-pointer flex-col rounded-xl border border-slate-200 bg-white p-6 text-left transition-all hover:scale-[1.02] hover:border-indigo-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                                    className="group flex min-h-[11rem] cursor-pointer flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 text-left transition-all hover:scale-[1.02] hover:border-indigo-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
-                    <Icon className="h-5 w-5 text-indigo-600" aria-hidden="true" />
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/50">
+                    <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                   </span>
 
-                  <span className="mt-4 text-lg font-semibold">
+                  <span className="mt-4 text-lg font-semibold text-slate-800 dark:text-slate-100">
                     {type.typeName}
                   </span>
-                  <span className="mt-1 text-sm text-slate-500">
+                  <span className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     {type.description}
                   </span>
 
                   <span className="mt-auto flex items-center justify-between pt-4">
-                    <span className="text-sm text-slate-600">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">
                       {type.count != null ? `${type.count} resources` : "—"}
                     </span>
                     <ArrowRight
-                      className="h-5 w-5 text-slate-400 transition-colors group-hover:text-indigo-600"
+                      className="h-5 w-5 text-slate-400 dark:text-slate-500 transition-colors group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
                       aria-hidden="true"
                     />
                   </span>

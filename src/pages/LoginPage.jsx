@@ -9,6 +9,7 @@ import {
   CalendarClock,
   Route,
 } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
 
 const ROLES = [
   { id: "student", label: "Student", icon: GraduationCap, placeholder: "e.g. 2403163" },
@@ -34,7 +35,6 @@ const FEATURES = [
   },
 ];
 
-// Pass an async `onLogin({ role, userId, password })` that throws on failure.
 export default function LoginPage({ onLogin }) {
   const [role, setRole] = useState("student");
   const [userId, setUserId] = useState("");
@@ -64,7 +64,13 @@ export default function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 font-sans text-slate-800">
+    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 transition-colors duration-300">
+      
+      {/* Global Theme Toggle - Floating Top Right */}
+      <div className="absolute top-6 right-6 z-50">
+        <ThemeToggle />
+      </div>
+
       {/* LEFT: branding */}
       <aside className="relative w-full md:w-1/2 lg:w-3/5 bg-gradient-to-br from-indigo-600 to-indigo-900 text-white flex flex-col justify-between px-8 py-8 md:px-12 md:py-12 lg:px-20 lg:py-16">
         <div className="my-auto py-4 md:py-0">
@@ -75,7 +81,7 @@ export default function LoginPage({ onLogin }) {
             Lab &amp; Resource Optimizer
           </p>
 
-          {/* Feature rows: hidden on mobile to keep the header short */}
+          {/* Feature rows */}
           <ul className="hidden md:block mt-12 space-y-6 max-w-md">
             {FEATURES.map(({ icon: Icon, title, text }) => (
               <li key={title} className="flex items-start gap-4">
@@ -93,10 +99,10 @@ export default function LoginPage({ onLogin }) {
       </aside>
 
       {/* RIGHT: login form */}
-      <main className="w-full md:w-1/2 lg:w-2/5 flex items-center justify-center px-6 py-10 md:px-10 bg-white md:bg-slate-50">
-        <div className="w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-sm md:shadow-md p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold text-slate-800">Sign in</h2>
-          <p className="mt-1 text-sm text-slate-500">Choose your role to continue</p>
+      <main className="w-full md:w-1/2 lg:w-2/5 flex items-center justify-center px-6 py-10 md:px-10 bg-white dark:bg-slate-900 md:bg-slate-50 md:dark:bg-slate-900 transition-colors">
+        <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm md:shadow-md p-6 sm:p-8 transition-colors">
+          <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">Sign in</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Choose your role to continue</p>
 
           <form onSubmit={handleSubmit} className="mt-6" noValidate>
             {/* Role selector */}
@@ -117,10 +123,10 @@ export default function LoginPage({ onLogin }) {
                       setRole(id);
                       setError("");
                     }}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 ${
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                       selected
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                        : "border-slate-200 text-slate-600 hover:bg-indigo-50/60 hover:border-indigo-200"
+                        ? "border-indigo-600 bg-indigo-50 text-indigo-700 dark:border-indigo-500 dark:bg-indigo-900/50 dark:text-indigo-300"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700"
                     }`}
                   >
                     <Icon className="h-5 w-5" aria-hidden="true" />
@@ -135,7 +141,7 @@ export default function LoginPage({ onLogin }) {
               <div>
                 <label
                   htmlFor="userId"
-                  className="block text-sm font-medium text-slate-700 mb-1.5"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
                 >
                   User ID
                 </label>
@@ -147,14 +153,14 @@ export default function LoginPage({ onLogin }) {
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
                   placeholder={activeRole.placeholder}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium text-slate-700 mb-1.5"
+                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
                 >
                   Password
                 </label>
@@ -165,20 +171,20 @@ export default function LoginPage({ onLogin }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                 />
               </div>
             </div>
 
-            {/* Error area (reserved height so layout doesn't jump) */}
+            {/* Error area */}
             <div className="min-h-[1.5rem] mt-3" aria-live="polite">
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="mt-2 w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -189,7 +195,7 @@ export default function LoginPage({ onLogin }) {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-slate-400">
+          <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
             Credentials are validated against the campus database.
           </p>
         </div>

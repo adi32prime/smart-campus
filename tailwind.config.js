@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class', // <-- THIS IS THE ONLY NEW LINE
   content: [
     './index.html',
     './src/**/*.{js,jsx,ts,tsx}',

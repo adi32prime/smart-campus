@@ -12,6 +12,8 @@ import {
   Loader2,
   Users,
 } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
+import AdminHeader from "../components/AdminHeader";
 
 const ROLE_OPTIONS = ["Student", "Faculty", "Admin"];
 
@@ -28,7 +30,7 @@ export default function AdminUsersPage({ user, onLogout }) {
   const [reloadKey, setReloadKey] = useState(0);
 
   // Modal state
-  const [modal, setModal] = useState(null); // { mode: "add" | "edit" | "reset", user?: {} }
+  const [modal, setModal] = useState(null); 
   const [form, setForm] = useState({ userId: "", password: "", role: "Student", status: "Active" });
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState("");
@@ -87,11 +89,7 @@ export default function AdminUsersPage({ user, onLogout }) {
         const res = await fetch("/api/admin/users", {
           method: "POST",
           headers: authHeaders(),
-          body: JSON.stringify({
-            userId: Number(form.userId),
-            password: form.password,
-            role: form.role,
-          }),
+          body: JSON.stringify({ userId: Number(form.userId), password: form.password, role: form.role }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Failed to add user");
@@ -137,44 +135,26 @@ export default function AdminUsersPage({ user, onLogout }) {
     }
   }
 
-  const fieldClass =
-    "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
+  const fieldClass = "w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link to="/admin" className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">SC</span>
-            <span className="hidden text-sm font-semibold sm:block">Smart Campus Admin</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs">
-              <span className="font-medium">{user?.userId}</span>
-              {user?.role && <span className="text-slate-500"> &middot; {user.role}</span>}
-            </div>
-            <button type="button" onClick={onLogout} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600">
-              <LogOut className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300">
+      <AdminHeader user={user} onLogout={onLogout} />
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         <nav aria-label="Breadcrumb" className="mb-5">
-          <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500">
-            <li><Link to="/admin" className="rounded hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600">Admin</Link></li>
+          <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+            <li><Link to="/admin" className="rounded hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600">Admin</Link></li>
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
-            <li aria-current="page" className="font-medium text-slate-800">Users</li>
+            <li aria-current="page" className="font-medium text-slate-800 dark:text-slate-200">Users</li>
           </ol>
         </nav>
 
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase text-slate-500">Manage</p>
+            <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Manage</p>
             <h1 className="text-3xl font-bold">Users</h1>
-            <p className="text-sm text-slate-500">Add, edit, delete users and reset their passwords.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Add, edit, delete users and reset their passwords.</p>
           </div>
           <button
             type="button"
@@ -187,7 +167,7 @@ export default function AdminUsersPage({ user, onLogout }) {
         </div>
 
         {error && (
-          <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400">
             <span className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
               {error}
@@ -198,21 +178,21 @@ export default function AdminUsersPage({ user, onLogout }) {
           </div>
         )}
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors">
           {loading ? (
             <div className="space-y-2 p-4">
               {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-10 animate-pulse rounded bg-slate-200" />
+                <div key={i} className="h-10 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
               ))}
             </div>
           ) : users.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
               <Users className="mb-3 h-8 w-8 text-slate-400" aria-hidden="true" />
-              <p className="text-sm text-slate-500">No users yet.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">No users yet.</p>
             </div>
           ) : (
             <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+              <thead className="bg-slate-50 dark:bg-slate-800 text-left text-xs uppercase text-slate-500 dark:text-slate-400">
                 <tr>
                   <th className="px-4 py-3 font-medium">User ID</th>
                   <th className="px-4 py-3 font-medium">Role</th>
@@ -220,20 +200,20 @@ export default function AdminUsersPage({ user, onLogout }) {
                   <th className="px-4 py-3 text-right font-medium">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {users.map((u) => (
-                  <tr key={u.userId} className="hover:bg-slate-50">
+                  <tr key={u.userId} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                     <td className="px-4 py-3 font-medium">{u.userId}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        u.role === "Admin" ? "bg-indigo-100 text-indigo-700" :
-                        u.role === "Faculty" ? "bg-amber-100 text-amber-700" :
-                        "bg-slate-100 text-slate-700"
+                        u.role === "Admin" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" :
+                        u.role === "Faculty" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                        "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
                       }`}>{u.role}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1.5 text-xs ${
-                        u.status === "Active" ? "text-green-700" : "text-slate-500"
+                        u.status === "Active" ? "text-green-700 dark:text-green-400" : "text-slate-500 dark:text-slate-400"
                       }`}>
                         <span className={`h-2 w-2 rounded-full ${u.status === "Active" ? "bg-green-500" : "bg-slate-400"}`} />
                         {u.status}
@@ -241,13 +221,13 @@ export default function AdminUsersPage({ user, onLogout }) {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openEdit(u)} aria-label={`Edit ${u.userId}`} className="rounded-lg border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-100">
+                        <button onClick={() => openEdit(u)} aria-label={`Edit ${u.userId}`} className="rounded-lg border border-slate-200 dark:border-slate-600 p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => openReset(u)} aria-label={`Reset password for ${u.userId}`} className="rounded-lg border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-100">
+                        <button onClick={() => openReset(u)} aria-label={`Reset password for ${u.userId}`} className="rounded-lg border border-slate-200 dark:border-slate-600 p-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
                           <KeyRound className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => handleDelete(u)} aria-label={`Delete ${u.userId}`} className="rounded-lg border border-red-200 p-1.5 text-red-600 hover:bg-red-50">
+                        <button onClick={() => handleDelete(u)} aria-label={`Delete ${u.userId}`} className="rounded-lg border border-red-200 dark:border-red-900/50 p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -262,14 +242,14 @@ export default function AdminUsersPage({ user, onLogout }) {
 
       {modal && (
         <div className="fixed inset-0 z-20 flex items-center justify-center bg-slate-900/40 p-4">
-          <form onSubmit={submitModal} className="w-full max-w-md rounded-xl bg-white p-5 shadow-lg">
+          <form onSubmit={submitModal} className="w-full max-w-md rounded-xl bg-white dark:bg-slate-800 p-5 shadow-lg border border-slate-200 dark:border-slate-700">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">
                 {modal.mode === "add" && "Add user"}
                 {modal.mode === "edit" && `Edit user ${modal.user.userId}`}
                 {modal.mode === "reset" && `Reset password for ${modal.user.userId}`}
               </h2>
-              <button type="button" onClick={closeModal} aria-label="Close" className="rounded p-1 text-slate-400 hover:bg-slate-100">
+              <button type="button" onClick={closeModal} aria-label="Close" className="rounded p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -319,13 +299,13 @@ export default function AdminUsersPage({ user, onLogout }) {
             )}
 
             {modalError && (
-              <p className="mt-3 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-2 text-sm text-red-700">
+              <p className="mt-3 flex items-center gap-2 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-2 text-sm text-red-700 dark:text-red-400">
                 <AlertCircle className="h-4 w-4" /> {modalError}
               </p>
             )}
 
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={closeModal} disabled={submitting} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-60">
+              <button type="button" onClick={closeModal} disabled={submitting} className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-60">
                 Cancel
               </button>
               <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">

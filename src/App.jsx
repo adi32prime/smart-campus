@@ -13,8 +13,22 @@ import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
 import SearchResourcesPage from './pages/SearchResourcesPage';
 import SearchResultsPage from './pages/SearchResultsPage';
 
+import useSSE from './hooks/useSSE';
+import ToastNotification from './components/ToastNotification';
+
 export default function App() {
   const [user, setUser] = useState(null);
+  const [toastData, setToastData] = useState(null);
+  
+  // Only connect to SSE if the user is logged in
+  const { lastEvent } = useSSE(user?.userId);
+
+  useEffect(() => {
+    if (lastEvent) {
+      // If the SSE sends an array of notifications, handle the most recent one
+      setToastData(lastEvent);
+    }
+  }, [lastEvent]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('sc_user');
@@ -62,68 +76,79 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route
-        path="/login"
-        element={
-          user ? (
-            <Navigate to={user.role === 'Admin' ? '/admin' : '/dashboard'} replace />
-          ) : (
-            <LoginPage onLogin={handleLogin} />
-          )
-        }
-      />
+    <>
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            user ? (
+              <Navigate to={user.role === 'Admin' ? '/admin' : '/dashboard'} replace />
+            ) : (
+              <LoginPage onLogin={handleLogin} />
+            )
+          }
+        />
 
-      {/* Student / Faculty routes */}
-      <Route
-        path="/dashboard"
-        element={RequireUser(<DashboardPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
-      />
-      <Route
-        path="/dashboard/department/:deptId"
-        element={RequireUser(<DepartmentPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
-      />
-      <Route
-        path="/dashboard/department/:deptId/:typeId"
-        element={RequireUser(<ResourceListPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
-      />
-      <Route
-        path="/dashboard/book/:resourceId"
-        element={RequireUser(<BookingFormPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
-      />
-      <Route
-        path="/dashboard/bookings"
-        element={RequireUser(<BookingStatusPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
-      />
-      <Route
-        path="/dashboard/search"
-        element={RequireUser(<SearchResourcesPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
-      />
-      <Route
-        path="/dashboard/search-results"
-        element={RequireUser(<SearchResultsPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
-      />
+        {/* Student / Faculty routes */}
+        <Route
+          path="/dashboard"
+          element={RequireUser(<DashboardPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
+        />
+        <Route
+          path="/dashboard/department/:deptId"
+          element={RequireUser(<DepartmentPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
+        />
+        <Route
+          path="/dashboard/department/:deptId/:typeId"
+          element={RequireUser(<ResourceListPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
+        />
+        <Route
+          path="/dashboard/book/:resourceId"
+          element={RequireUser(<BookingFormPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
+        />
+        <Route
+          path="/dashboard/bookings"
+          element={RequireUser(<BookingStatusPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
+        />
+        <Route
+          path="/dashboard/search"
+          element={RequireUser(<SearchResourcesPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
+        />
+        <Route
+          path="/dashboard/search-results"
+          element={RequireUser(<SearchResultsPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
+        />
 
-      {/* Admin routes */}
-      <Route
-        path="/admin"
-        element={RequireUser(<AdminDashboardPage user={user} onLogout={handleLogout} />, ['Admin'])}
-      />
-      <Route
-        path="/admin/reports"
-        element={RequireUser(<AdminReportsPage user={user} onLogout={handleLogout} />, ['Admin'])}
-      />
-      <Route
-        path="/admin/users"
-        element={RequireUser(<AdminUsersPage user={user} onLogout={handleLogout} />, ['Admin'])}
-      />
-      <Route
-        path="/admin/audit-logs"
-        element={RequireUser(<AdminAuditLogsPage user={user} onLogout={handleLogout} />, ['Admin'])}
-      />
+        {/* Admin routes */}
+        <Route
+          path="/admin"
+          element={RequireUser(<AdminDashboardPage user={user} onLogout={handleLogout} />, ['Admin'])}
+        />
+        <Route
+          path="/admin/reports"
+          element={RequireUser(<AdminReportsPage user={user} onLogout={handleLogout} />, ['Admin'])}
+        />
+        <Route
+          path="/admin/users"
+          element={RequireUser(<AdminUsersPage user={user} onLogout={handleLogout} />, ['Admin'])}
+        />
+        <Route
+          path="/admin/audit-logs"
+          element={RequireUser(<AdminAuditLogsPage user={user} onLogout={handleLogout} />, ['Admin'])}
+        />
 
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+
+      {/* Global Toast Notification */}
+      {user && (
+        <ToastNotification 
+          notification={toastData} 
+          onClose={() => setToastData(null)} 
+          user={user}
+        />
+      )}
+    </>
   );
 }

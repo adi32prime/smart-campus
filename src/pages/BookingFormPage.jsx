@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   ArrowLeft,
 } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                           */
@@ -35,21 +36,15 @@ const PRIORITY_BY_REASON = {
 };
 
 const PRIORITY_STYLES = {
-  high: { label: "High Priority", className: "bg-red-100 text-red-700" },
-  medium: { label: "Medium Priority", className: "bg-amber-100 text-amber-700" },
-  low: { label: "Low Priority", className: "bg-slate-100 text-slate-700" },
+  high: { label: "High Priority", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+  medium: { label: "Medium Priority", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+  low: { label: "Low Priority", className: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300" },
 };
 
-
-// Used only to build breadcrumb links from the names the API returns
 const DEPT_IDS_BY_NAME = { CSE: "A1", Electrical: "B1", AIML: "C1", Mechanical: "D1" };
 const TYPE_IDS_BY_NAME = {
-  Lab: 1,
-  Labs: 1,
-  Classroom: 2,
-  Classrooms: 2,
-  "Conference Hall": 3,
-  "Conference Halls": 3,
+  Lab: 1, Labs: 1, Classroom: 2, Classrooms: 2,
+  "Conference Hall": 3, "Conference Halls": 3,
 };
 
 const NOTES_MAX = 200;
@@ -89,7 +84,7 @@ function formatDate(dateString) {
 function Field({ label, children }) {
   return (
     <div>
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
       <p className="text-sm font-medium">{children}</p>
     </div>
   );
@@ -99,9 +94,9 @@ function ErrorBanner({ message, onRetry }) {
   return (
     <div
       role="alert"
-      className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-4 sm:flex-row sm:items-center sm:justify-between"
     >
-      <div className="flex items-center gap-2 text-sm text-red-700">
+      <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
         <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
         {message}
       </div>
@@ -109,7 +104,7 @@ function ErrorBanner({ message, onRetry }) {
         <button
           type="button"
           onClick={onRetry}
-          className="self-start rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 sm:self-auto"
+          className="self-start rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 sm:self-auto"
         >
           Retry
         </button>
@@ -127,14 +122,12 @@ export default function BookingFormPage({ user, onLogout }) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Query params
   const date = searchParams.get("date");
   const startTime = searchParams.get("startTime");
   const endTime = searchParams.get("endTime");
   const isWaitlistMode = searchParams.get("waitlist") === "1";
   const missingParams = !date || !startTime || !endTime;
 
-  // State
   const [resource, setResource] = useState(null);
   const [reasonId, setReasonId] = useState("");
   const [notes, setNotes] = useState("");
@@ -145,7 +138,6 @@ export default function BookingFormPage({ user, onLogout }) {
   const [submitError, setSubmitError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
 
-  // Fetch resource details
   useEffect(() => {
     if (missingParams) return;
     const controller = new AbortController();
@@ -172,8 +164,6 @@ export default function BookingFormPage({ user, onLogout }) {
     load();
     return () => controller.abort();
   }, [resourceId, missingParams, reloadKey]);
-
-
 
   function clearError(field) {
     setErrors((prev) => {
@@ -246,7 +236,6 @@ export default function BookingFormPage({ user, onLogout }) {
     }
   }
 
-  // Breadcrumb data (derived from the fetched resource)
   const deptName = resource?.departmentName;
   const typeName = resource?.typeName;
   const deptId = deptName ? DEPT_IDS_BY_NAME[deptName] : undefined;
@@ -255,18 +244,17 @@ export default function BookingFormPage({ user, onLogout }) {
   const priority = reasonId ? PRIORITY_STYLES[PRIORITY_BY_REASON[reasonId]] : null;
 
   const linkClass =
-    "rounded hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
-  const cardClass = "rounded-xl border border-slate-200 bg-white p-4 sm:p-5";
+    "rounded hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
+  const cardClass = "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-5 transition-colors";
   const inputClass =
-    "w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-800 " +
+    "w-full rounded-lg border bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 " +
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
-  const borderFor = (hasError) => (hasError ? "border-red-400" : "border-slate-200");
-
+  const borderFor = (hasError) => (hasError ? "border-red-400 dark:border-red-500" : "border-slate-200 dark:border-slate-600");
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300">
       {/* Top bar */}
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
+      <header className="sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors duration-300">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <Link
             to="/dashboard"
@@ -281,14 +269,17 @@ export default function BookingFormPage({ user, onLogout }) {
           </Link>
 
           <div className="flex items-center gap-3">
-            <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs">
+            {/* ADDED THEME TOGGLE HERE */}
+            <ThemeToggle />
+            
+            <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">
               <span className="font-medium">{user?.userId}</span>
-              {user?.role && <span className="text-slate-500"> &middot; {user.role}</span>}
+              {user?.role && <span className="text-slate-500 dark:text-slate-400"> &middot; {user.role}</span>}
             </div>
             <button
               type="button"
               onClick={onLogout}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             >
               <LogOut className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Logout</span>
@@ -300,7 +291,7 @@ export default function BookingFormPage({ user, onLogout }) {
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="mb-5">
-          <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500">
+          <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
             <li>
               <Link to="/dashboard" className={linkClass}>
                 Dashboard
@@ -335,7 +326,7 @@ export default function BookingFormPage({ user, onLogout }) {
               </>
             )}
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
-            <li aria-current="page" className="font-medium text-slate-800">
+            <li aria-current="page" className="font-medium text-slate-800 dark:text-slate-200">
               Book
             </li>
           </ol>
@@ -343,9 +334,9 @@ export default function BookingFormPage({ user, onLogout }) {
 
         {/* Page header */}
         <div className="mb-6">
-          <p className="text-xs uppercase text-slate-500">Booking Request</p>
+          <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Booking Request</p>
           <h1 className="text-3xl font-bold">Confirm your booking</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Fill in the details below. Your request will be processed by the scheduling engine.
           </p>
         </div>
@@ -353,15 +344,15 @@ export default function BookingFormPage({ user, onLogout }) {
         {missingParams ? (
           <div
             role="alert"
-            className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-4 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div className="flex items-center gap-2 text-sm text-red-700">
+            <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
               <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
               Missing booking details. Please go back and select a slot again.
             </div>
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-1.5 self-start rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 sm:self-auto"
+              className="inline-flex items-center gap-1.5 self-start rounded-lg border border-red-300 dark:border-red-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 sm:self-auto"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               Back to dashboard
@@ -378,15 +369,15 @@ export default function BookingFormPage({ user, onLogout }) {
             <div className="lg:col-span-3">
               {loading || !resource ? (
                 <div className="animate-pulse" aria-busy="true" aria-label="Loading booking form">
-                  <div className="h-44 rounded-xl bg-slate-200" />
+                  <div className="h-44 rounded-xl bg-slate-200 dark:bg-slate-800" />
                   <div className="mt-6 space-y-4">
-                    <div className="h-16 rounded-xl bg-slate-200" />
-                    <div className="h-16 rounded-xl bg-slate-200" />
-                    <div className="h-16 rounded-xl bg-slate-200" />
-                    <div className="h-24 rounded-xl bg-slate-200" />
+                    <div className="h-16 rounded-xl bg-slate-200 dark:bg-slate-800" />
+                    <div className="h-16 rounded-xl bg-slate-200 dark:bg-slate-800" />
+                    <div className="h-16 rounded-xl bg-slate-200 dark:bg-slate-800" />
+                    <div className="h-24 rounded-xl bg-slate-200 dark:bg-slate-800" />
                     <div className="flex gap-3">
-                      <div className="h-10 w-24 rounded-lg bg-slate-200" />
-                      <div className="h-10 w-40 rounded-lg bg-slate-200" />
+                      <div className="h-10 w-24 rounded-lg bg-slate-200 dark:bg-slate-800" />
+                      <div className="h-10 w-40 rounded-lg bg-slate-200 dark:bg-slate-800" />
                     </div>
                   </div>
                 </div>
@@ -399,7 +390,7 @@ export default function BookingFormPage({ user, onLogout }) {
                     </h2>
                     <div className="mb-4 flex flex-wrap items-center gap-3">
                       <p className="text-lg font-semibold">{resource.resourceName}</p>
-                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+                      <span className="rounded-full bg-indigo-50 dark:bg-indigo-900/50 px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-400">
                         {resource.typeName}
                       </span>
                     </div>
@@ -410,7 +401,7 @@ export default function BookingFormPage({ user, onLogout }) {
                       <Field label="Capacity">{resource.capacity}</Field>
                       <Field label="Date">
                         <span className="inline-flex items-center gap-1.5">
-                          <CalendarClock className="h-4 w-4 text-indigo-600" aria-hidden="true" />
+                          <CalendarClock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                           {formatDate(date)}
                         </span>
                       </Field>
@@ -422,7 +413,7 @@ export default function BookingFormPage({ user, onLogout }) {
                   <form onSubmit={handleSubmit} noValidate className="mt-6">
                     <div className={`${cardClass} space-y-5`}>
                       {isWaitlistMode && (
-                        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                        <div className="flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-800 dark:text-amber-400">
                           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                           <div>
                             <p className="font-medium">This resource is currently occupied.</p>
@@ -435,15 +426,12 @@ export default function BookingFormPage({ user, onLogout }) {
                       )}
                       <h2 className="text-base font-semibold">Request details</h2>
 
-
-
-
                       {/* Reason */}
                       <div>
                         <label htmlFor="reason" className="mb-1 block text-sm font-medium">
                           Purpose / Reason <span className="text-red-500">*</span>
                         </label>
-                        <p id="reason-help" className="mb-2 text-xs text-slate-500">
+                        <p id="reason-help" className="mb-2 text-xs text-slate-500 dark:text-slate-400">
                           Select the reason for this booking. This determines scheduling priority.
                         </p>
                         <select
@@ -466,7 +454,7 @@ export default function BookingFormPage({ user, onLogout }) {
                           ))}
                         </select>
                         {errors.reason && (
-                          <p id="reason-error" className="mt-1 text-xs text-red-600">
+                          <p id="reason-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
                             {errors.reason}
                           </p>
                         )}
@@ -477,7 +465,7 @@ export default function BookingFormPage({ user, onLogout }) {
                         <label htmlFor="notes" className="mb-1 block text-sm font-medium">
                           Additional Notes
                         </label>
-                        <p id="notes-help" className="mb-2 text-xs text-slate-500">
+                        <p id="notes-help" className="mb-2 text-xs text-slate-500 dark:text-slate-400">
                           Optional. Any extra details for the coordinator.
                         </p>
                         <textarea
@@ -487,9 +475,9 @@ export default function BookingFormPage({ user, onLogout }) {
                           value={notes}
                           onChange={(e) => setNotes(e.target.value.slice(0, NOTES_MAX))}
                           aria-describedby="notes-help notes-count"
-                          className={`${inputClass} resize-none border-slate-200`}
+                          className={`${inputClass} resize-none ${borderFor(false)}`}
                         />
-                        <p id="notes-count" className="mt-1 text-right text-xs text-slate-500">
+                        <p id="notes-count" className="mt-1 text-right text-xs text-slate-500 dark:text-slate-400">
                           {notes.length} / {NOTES_MAX}
                         </p>
                       </div>
@@ -498,7 +486,7 @@ export default function BookingFormPage({ user, onLogout }) {
                     {submitError && (
                       <div
                         role="alert"
-                        className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                        className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400"
                       >
                         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                         {submitError}
@@ -510,7 +498,7 @@ export default function BookingFormPage({ user, onLogout }) {
                         type="button"
                         onClick={() => navigate(-1)}
                         disabled={submitting}
-                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Cancel
                       </button>
@@ -533,7 +521,7 @@ export default function BookingFormPage({ user, onLogout }) {
                       </button>
                     </div>
 
-                    <p className="mt-3 text-xs text-slate-400">
+                    <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
                       By submitting, you agree to the campus resource usage policy.
                     </p>
                   </form>
@@ -548,25 +536,25 @@ export default function BookingFormPage({ user, onLogout }) {
                   id="how-heading"
                   className="mb-3 flex items-center gap-2 text-sm font-semibold"
                 >
-                  <Info className="h-4 w-4 text-indigo-600" aria-hidden="true" />
+                  <Info className="h-4 w-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                   How this works
                 </h2>
-                <ol className="space-y-3 text-sm text-slate-600">
+                <ol className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
                   {[
                     "DSA engine preprocesses your request and checks campus connectivity.",
                     "OS scheduler runs FCFS + Priority based on your selected reason.",
                     "DBMS commits the booking and updates resource status.",
                   ].map((text, i) => (
                     <li key={i} className="flex gap-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-900/50 text-xs font-semibold text-indigo-700 dark:text-indigo-400">
                         {i + 1}
                       </span>
                       <span>{text}</span>
                     </li>
                   ))}
                 </ol>
-                <p className="mt-4 flex items-center gap-1.5 border-t border-slate-200 pt-3 text-xs text-slate-500">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />
+                <p className="mt-4 flex items-center gap-1.5 border-t border-slate-200 dark:border-slate-700 pt-3 text-xs text-slate-500 dark:text-slate-400">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" aria-hidden="true" />
                   Typical response time: &lt; 3 seconds
                 </p>
               </section>
@@ -581,7 +569,7 @@ export default function BookingFormPage({ user, onLogout }) {
                   >
                     {priority.label}
                   </span>
-                  <p className="mt-3 text-xs text-slate-500">
+                  <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                     Higher priority requests are scheduled first.
                   </p>
                 </section>

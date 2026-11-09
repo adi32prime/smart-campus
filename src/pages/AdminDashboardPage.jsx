@@ -17,6 +17,8 @@ import {
   XCircle,
   FileClock,
 } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
+import AdminHeader from "../components/AdminHeader";
 
 const REFRESH_MS = 30000;
 
@@ -40,19 +42,19 @@ function formatDateTime(dateString, startTime, endTime) {
 function getStatusBadge(status) {
   switch (String(status).toLowerCase()) {
     case "available":
-      return { className: "bg-green-100 text-green-700", label: "Available" };
+      return { className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", label: "Available" };
     case "confirmed":
-      return { className: "bg-green-100 text-green-700", label: "Confirmed" };
+      return { className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", label: "Confirmed" };
     case "occupied":
-      return { className: "bg-red-100 text-red-700", label: "Occupied" };
+      return { className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", label: "Occupied" };
     case "pending":
-      return { className: "bg-amber-100 text-amber-700", label: "Pending" };
+      return { className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", label: "Pending" };
     case "waitlisted":
-      return { className: "bg-indigo-100 text-indigo-700", label: "Waitlisted" };
+      return { className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400", label: "Waitlisted" };
     case "cancelled":
-      return { className: "bg-slate-100 text-slate-700", label: "Cancelled" };
+      return { className: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300", label: "Cancelled" };
     default:
-      return { className: "bg-slate-100 text-slate-700", label: status || "Unknown" };
+      return { className: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300", label: status || "Unknown" };
   }
 }
 
@@ -97,12 +99,12 @@ function Badge({ status, small = false }) {
 
 function StatCard({ icon: Icon, value, label }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
-        <Icon className="h-5 w-5 text-indigo-600" aria-hidden="true" />
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 transition-colors">
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/50">
+        <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
       </div>
       <p className="text-3xl font-bold">{fmtNum(value)}</p>
-      <p className="text-sm text-slate-500">{label}</p>
+      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
     </div>
   );
 }
@@ -190,88 +192,36 @@ export default function AdminDashboardPage({ user, onLogout }) {
   const allFailed = failedCount === 4;
   const partialFailed = failedCount > 0 && !allFailed;
 
-  const cardClass = "rounded-xl border border-slate-200 bg-white";
-
-  const navButton = "inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
+  const cardClass = "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors";
+  const navButton = "inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <Link to="/admin" className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">SC</span>
-            <span className="hidden text-sm font-semibold sm:block">Smart Campus</span>
-            <span className="hidden border-l border-slate-200 pl-3 text-xs text-slate-500 md:block">Admin Panel</span>
-          </Link>
-
-          <nav className="hidden items-center gap-2 md:flex">
-            <Link to="/admin" className={navButton}>Dashboard</Link>
-            <Link to="/admin/users" className={navButton}>
-              <Users className="h-3.5 w-3.5" /> Users
-            </Link>
-            <Link to="/admin/audit-logs" className={navButton}>
-              <FileClock className="h-3.5 w-3.5" /> Audit Logs
-            </Link>
-            <Link to="/admin/reports" className={navButton}>Reports</Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
-              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-              Admin
-            </div>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
-            >
-              <LogOut className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile nav */}
-        <div className="flex gap-2 overflow-x-auto border-t border-slate-200 px-4 py-2 md:hidden">
-          <Link to="/admin" className={navButton}>Dashboard</Link>
-          <Link to="/admin/users" className={navButton}>Users</Link>
-          <Link to="/admin/audit-logs" className={navButton}>Audit</Link>
-          <Link to="/admin/reports" className={navButton}>Reports</Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300">
+      <AdminHeader user={user} onLogout={onLogout} />
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {allFailed && !loading && (
-          <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-sm text-red-700">
+          <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
               <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
               Couldn&apos;t load dashboard data.
             </div>
             <button type="button" onClick={loadAll} className="self-start rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 sm:self-auto">Retry</button>
           </div>
         )}
-        {partialFailed && (
-          <div role="alert" className="mb-5 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-sm text-amber-800">
-              <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
-              Some data couldn&apos;t be loaded.
-            </div>
-            <button type="button" onClick={loadAll} className="self-start rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 sm:self-auto">Retry</button>
-          </div>
-        )}
 
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs uppercase text-slate-500">System Overview</p>
+            <p className="text-xs uppercase text-slate-500 dark:text-slate-400">System Overview</p>
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-sm text-slate-500">Live status of all campus resources and bookings.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Live status of all campus resources and bookings.</p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span aria-live="polite">
               {lastUpdated ? `Last updated ${lastUpdated.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}` : "Not updated yet"}
             </span>
             {refreshing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            <button type="button" onClick={loadAll} disabled={refreshing} aria-label="Refresh" className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-100 disabled:opacity-60">
+            <button type="button" onClick={loadAll} disabled={refreshing} aria-label="Refresh" className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-60">
               <RefreshCw className="h-4 w-4" />
             </button>
           </div>
@@ -279,7 +229,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
 
         <section aria-label="Campus totals" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {loading ? (
-            [0, 1, 2, 3].map((i) => <div key={i} className="h-36 animate-pulse rounded-xl bg-slate-200" />)
+            [0, 1, 2, 3].map((i) => <div key={i} className="h-36 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />)
           ) : (
             <>
               <StatCard icon={Building2} value={stats?.totalDepartments} label="Departments" />
@@ -293,12 +243,12 @@ export default function AdminDashboardPage({ user, onLogout }) {
         <section aria-label="Resource status" className={`${cardClass} mt-4 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between`}>
           <div>
             <p className="flex items-center gap-2 text-sm font-semibold">
-              <Activity className="h-4 w-4 text-indigo-600" /> Resource Status
+              <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" /> Resource Status
             </p>
-            <p className="mt-0.5 text-xs text-slate-500">Live data &mdash; refreshed every 30 seconds</p>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Live data &mdash; refreshed every 30 seconds</p>
           </div>
           {loading ? (
-            <div className="h-5 w-48 animate-pulse rounded bg-slate-200" />
+            <div className="h-5 w-48 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
           ) : (
             <div className="flex gap-6 text-sm">
               <span className="inline-flex items-center gap-2">
@@ -319,10 +269,10 @@ export default function AdminDashboardPage({ user, onLogout }) {
 
             {loading ? (
               <div className="space-y-4">
-                {[0, 1, 2].map((i) => <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-200" />)}
+                {[0, 1, 2].map((i) => <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />)}
               </div>
             ) : deptCards.length === 0 ? (
-              <div className={`${cardClass} px-4 py-10 text-center text-sm text-slate-500`}>No resources configured.</div>
+              <div className={`${cardClass} px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400`}>No resources configured.</div>
             ) : (
               <div className="space-y-4">
                 {deptCards.map((dept, index) => {
@@ -337,28 +287,28 @@ export default function AdminDashboardPage({ user, onLogout }) {
                         <span className="flex min-w-0 items-center gap-2">
                           {open ? <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" /> : <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" />}
                           <span className="truncate font-semibold">{dept.name}</span>
-                          <span className="shrink-0 text-xs text-slate-500">{dept.count} resources</span>
+                          <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">{dept.count} resources</span>
                         </span>
-                        <span className="hidden shrink-0 items-center gap-3 text-xs text-slate-500 sm:flex">
+                        <span className="hidden shrink-0 items-center gap-3 text-xs text-slate-500 dark:text-slate-400 sm:flex">
                           <span className="inline-flex items-center gap-1">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> {available} available
+                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" /> {available} available
                           </span>
                           <span className="inline-flex items-center gap-1">
-                            <XCircle className="h-3.5 w-3.5 text-red-600" /> {occupied} occupied
+                            <XCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" /> {occupied} occupied
                           </span>
                         </span>
                       </button>
                       <div id={panelId} aria-hidden={!open} className={`grid transition-[grid-template-rows] duration-200 ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
                         <div className="overflow-hidden">
                           {dept.resources.length === 0 ? (
-                            <p className="border-t border-slate-200 px-4 py-3 text-sm text-slate-500">No resources configured.</p>
+                            <p className="border-t border-slate-200 dark:border-slate-700 px-4 py-3 text-sm text-slate-500 dark:text-slate-400">No resources configured.</p>
                           ) : (
-                            <ul className="border-t border-slate-200">
+                            <ul className="border-t border-slate-200 dark:border-slate-700">
                               {dept.resources.map((r) => (
-                                <li key={r.resourceId} className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-2.5 last:border-b-0">
+                                <li key={r.resourceId} className="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-2.5 last:border-b-0">
                                   <span className="min-w-0 truncate text-sm">
                                     {r.resourceName}
-                                    {r.typeName && <span className="ml-2 text-xs text-slate-500">{r.typeName}</span>}
+                                    {r.typeName && <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">{r.typeName}</span>}
                                   </span>
                                   <Badge status={r.status} />
                                 </li>
@@ -381,29 +331,29 @@ export default function AdminDashboardPage({ user, onLogout }) {
                 <div className="space-y-3">
                   {[0, 1, 2, 3, 4].map((i) => (
                     <div key={i} className="space-y-2">
-                      <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
-                      <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200" />
+                      <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+                      <div className="h-3 w-1/2 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
                     </div>
                   ))}
                 </div>
               ) : recentBookings.length === 0 ? (
-                <p className="py-6 text-sm text-slate-500">No bookings yet.</p>
+                <p className="py-6 text-sm text-slate-500 dark:text-slate-400">No bookings yet.</p>
               ) : (
-                <ul className="max-h-96 divide-y divide-slate-200 overflow-y-auto">
+                <ul className="max-h-96 divide-y divide-slate-200 dark:divide-slate-700 overflow-y-auto">
                   {recentBookings.map((b) => (
                     <li key={b.bookingId} className="flex items-start justify-between gap-3 py-3 first:pt-0">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{b.resourceName}</p>
-                        <p className="text-xs text-slate-500">{b.userId}</p>
-                        <p className="text-xs text-slate-500">{formatDateTime(b.date, b.startTime, b.endTime)}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{b.userId}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{formatDateTime(b.date, b.startTime, b.endTime)}</p>
                       </div>
                       <Badge status={b.status} small />
                     </li>
                   ))}
                 </ul>
               )}
-              <div className="mt-3 border-t border-slate-200 pt-3">
-                <button type="button" onClick={() => navigate("/admin/reports")} className="rounded text-sm font-medium text-indigo-600 hover:text-indigo-700">
+              <div className="mt-3 border-t border-slate-200 dark:border-slate-700 pt-3">
+                <button type="button" onClick={() => navigate("/admin/reports")} className="rounded text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
                   View all &rarr;
                 </button>
               </div>

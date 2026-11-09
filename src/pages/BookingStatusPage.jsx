@@ -17,7 +17,7 @@ import {
 /* Constants                                                           */
 /* ------------------------------------------------------------------ */
 
-const TABS = ["All", "Pending", "Confirmed", "Waitlisted", "Cancelled"];
+const TABS = ["All", "Confirmed", "Waitlisted", "Cancelled"];
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -51,7 +51,6 @@ function formatTimeRange(start, end) {
   return `${formatTime(start)} \u2013 ${formatTime(end)}`;
 }
 
-// True if the date is today or later (local time)
 function isFutureDate(dateString) {
   const dt = parseLocalDate(dateString);
   if (Number.isNaN(dt.getTime())) return false;
@@ -63,17 +62,17 @@ function isFutureDate(dateString) {
 function getStatusStyles(status) {
   switch (String(status).toLowerCase()) {
     case "pending":
-      return { className: "bg-amber-100 text-amber-700", label: "Pending" };
+      return { className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", label: "Pending" };
     case "confirmed":
-      return { className: "bg-green-100 text-green-700", label: "Confirmed" };
+      return { className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", label: "Confirmed" };
     case "waitlisted":
-      return { className: "bg-indigo-100 text-indigo-700", label: "Waitlisted" };
+      return { className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400", label: "Waitlisted" };
     case "cancelled":
-      return { className: "bg-red-100 text-red-700", label: "Cancelled" };
+      return { className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", label: "Cancelled" };
     case "rejected":
-      return { className: "bg-slate-100 text-slate-700", label: "Rejected" };
+      return { className: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300", label: "Rejected" };
     default:
-      return { className: "bg-slate-100 text-slate-700", label: status || "Unknown" };
+      return { className: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300", label: status || "Unknown" };
   }
 }
 
@@ -90,8 +89,8 @@ export default function BookingStatusPage({ user, onLogout }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const successStatus = searchParams.get("status"); // "confirmed" | null
-  const highlightId = searchParams.get("id"); // bookingId or null
+  const successStatus = searchParams.get("status"); 
+  const highlightId = searchParams.get("id"); 
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +102,6 @@ export default function BookingStatusPage({ user, onLogout }) {
 
   const userId = user?.userId;
 
-  // Fetch the user's bookings
   useEffect(() => {
     const controller = new AbortController();
 
@@ -119,9 +117,7 @@ export default function BookingStatusPage({ user, onLogout }) {
         const data = await res.json();
         if (!Array.isArray(data)) throw new Error("Unexpected response");
 
-        const sorted = [...data].sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        const sorted = [...data].sort((a, b) => Number(b.bookingId) - Number(a.bookingId));
         setBookings(sorted);
         setLoading(false);
       } catch (err) {
@@ -165,8 +161,7 @@ export default function BookingStatusPage({ user, onLogout }) {
     }
   }
 
-  // Counts and filtered list
-  const counts = { All: bookings.length, Pending: 0, Confirmed: 0, Cancelled: 0 };
+  const counts = { All: bookings.length, Confirmed: 0, Waitlisted: 0, Cancelled: 0 };
   bookings.forEach((b) => {
     const key = normalizeStatus(b.status);
     if (counts[key] !== undefined && key !== "All") counts[key] += 1;
@@ -178,12 +173,12 @@ export default function BookingStatusPage({ user, onLogout }) {
       : bookings.filter((b) => normalizeStatus(b.status) === activeTab);
 
   const linkClass =
-    "rounded hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
+    "rounded hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600";
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300">
       {/* Top bar */}
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
+      <header className="sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors duration-300">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
           <Link
             to="/dashboard"
@@ -198,14 +193,14 @@ export default function BookingStatusPage({ user, onLogout }) {
           </Link>
 
           <div className="flex items-center gap-3">
-            <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs">
+            <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">
               <span className="font-medium">{user?.userId}</span>
-              {user?.role && <span className="text-slate-500"> &middot; {user.role}</span>}
+              {user?.role && <span className="text-slate-500 dark:text-slate-400"> &middot; {user.role}</span>}
             </div>
             <button
               type="button"
               onClick={onLogout}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             >
               <LogOut className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Logout</span>
@@ -215,47 +210,20 @@ export default function BookingStatusPage({ user, onLogout }) {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
-        {/* Waitlist banner */}
-        {successStatus === "waitlisted" && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="mb-5 flex items-start gap-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100">
-              <Clock className="h-6 w-6 text-indigo-600" aria-hidden="true" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-semibold text-indigo-800">Added to Waitlist</p>
-              <p className="text-sm text-indigo-700">
-                The resource was occupied. You&apos;ll be notified if it becomes available and your
-                request is promoted.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={dismissBanner}
-              aria-label="Dismiss"
-              className="rounded-lg p-1.5 text-indigo-700 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
-            >
-              <X className="h-5 w-5" aria-hidden="true" />
-            </button>
-          </div>
-        )}
-
+        
         {/* Success banner */}
         {successStatus === "confirmed" && (
           <div
             role="status"
             aria-live="polite"
-            className="mb-5 flex items-start gap-4 rounded-xl border border-green-200 bg-green-50 p-4"
+            className="mb-5 flex items-start gap-4 rounded-xl border border-green-200 dark:border-green-900/50 bg-green-50 dark:bg-green-900/20 p-4"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle2 className="h-6 w-6 text-green-600" aria-hidden="true" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 dark:bg-green-800/50">
+              <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-lg font-semibold text-green-800">Booking Confirmed</p>
-              <p className="text-sm text-green-700">
+              <p className="text-lg font-semibold text-green-800 dark:text-green-300">Booking Confirmed</p>
+              <p className="text-sm text-green-700 dark:text-green-400">
                 Your request has been received and scheduled. You&apos;ll find it below.
               </p>
             </div>
@@ -263,22 +231,23 @@ export default function BookingStatusPage({ user, onLogout }) {
               type="button"
               onClick={dismissBanner}
               aria-label="Dismiss confirmation"
-              className="rounded-lg p-1.5 text-green-700 hover:bg-green-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+              className="rounded-lg p-1.5 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
         )}
+
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="mb-5">
-          <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500">
+          <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
             <li>
               <Link to="/dashboard" className={linkClass}>
                 Dashboard
               </Link>
             </li>
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
-            <li aria-current="page" className="font-medium text-slate-800">
+            <li aria-current="page" className="font-medium text-slate-800 dark:text-slate-200">
               My Bookings
             </li>
           </ol>
@@ -286,15 +255,15 @@ export default function BookingStatusPage({ user, onLogout }) {
 
         {/* Page header */}
         <div className="mb-6">
-          <p className="text-xs uppercase text-slate-500">Your Requests</p>
+          <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Your Requests</p>
           <h1 className="text-3xl font-bold">My Bookings</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             View all your booking requests and their current status.
           </p>
         </div>
 
         {/* Filter tabs */}
-        <div className="mb-5 overflow-x-auto border-b border-slate-200">
+        <div className="mb-5 overflow-x-auto border-b border-slate-200 dark:border-slate-700">
           <div role="tablist" aria-label="Filter bookings by status" className="flex min-w-max gap-6">
             {TABS.map((tab) => {
               const selected = activeTab === tab;
@@ -309,8 +278,8 @@ export default function BookingStatusPage({ user, onLogout }) {
                   onClick={() => setActiveTab(tab)}
                   className={`-mb-px whitespace-nowrap border-b-2 px-1 pb-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                     selected
-                      ? "border-indigo-600 text-indigo-600"
-                      : "border-transparent text-slate-500 hover:text-slate-800"
+                      ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                      : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                   }`}
                 >
                   {tab} ({counts[tab]})
@@ -324,7 +293,7 @@ export default function BookingStatusPage({ user, onLogout }) {
         {cancelError && (
           <div
             role="alert"
-            className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+            className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400"
           >
             <span className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -334,7 +303,7 @@ export default function BookingStatusPage({ user, onLogout }) {
               type="button"
               onClick={() => setCancelError("")}
               aria-label="Dismiss error"
-              className="rounded p-1 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+              className="rounded p-1 hover:bg-red-100 dark:hover:bg-red-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -346,43 +315,43 @@ export default function BookingStatusPage({ user, onLogout }) {
           {loading ? (
             <div className="space-y-3">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-32 animate-pulse rounded-xl bg-slate-200" />
+                <div key={i} className="h-32 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />
               ))}
             </div>
           ) : error ? (
             <div
               role="alert"
-              className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="flex items-center gap-2 text-sm text-red-700">
+              <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
                 <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
                 Couldn&apos;t load your bookings. Please try again.
               </div>
               <button
                 type="button"
                 onClick={() => setReloadKey((k) => k + 1)}
-                className="self-start rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 sm:self-auto"
+                className="self-start rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 sm:self-auto"
               >
                 Retry
               </button>
             </div>
           ) : bookings.length === 0 ? (
-            <div className="flex flex-col items-center rounded-xl border border-slate-200 bg-white px-4 py-12 text-center">
+            <div className="flex flex-col items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-12 text-center">
               <CalendarClock className="mb-3 h-10 w-10 text-slate-400" aria-hidden="true" />
               <p className="text-lg font-semibold">No bookings yet</p>
-              <p className="mb-5 text-sm text-slate-500">
+              <p className="mb-5 text-sm text-slate-500 dark:text-slate-400">
                 Start by browsing a department from the dashboard.
               </p>
               <button
                 type="button"
                 onClick={() => navigate("/dashboard")}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2"
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
               >
                 Browse Departments
               </button>
             </div>
           ) : visible.length === 0 ? (
-            <p className="py-12 text-center text-sm text-slate-500">
+            <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
               No {activeTab.toLowerCase()} bookings.
             </p>
           ) : (
@@ -390,7 +359,7 @@ export default function BookingStatusPage({ user, onLogout }) {
               {visible.map((b) => {
                 const badge = getStatusStyles(b.status);
                 const statusKey = normalizeStatus(b.status);
-                const cancellable = statusKey === "Pending" || statusKey === "Confirmed";
+                const cancellable = statusKey === "Confirmed"; // Only Confirmed can be cancelled
                 const future = isFutureDate(b.date);
                 const highlighted = highlightId !== null && String(b.bookingId) === highlightId;
                 const isCancelling = cancellingId === b.bookingId;
@@ -398,14 +367,14 @@ export default function BookingStatusPage({ user, onLogout }) {
                 return (
                   <li
                     key={b.bookingId}
-                    className={`flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5 ${
-                      highlighted ? "ring-2 ring-indigo-400" : ""
+                    className={`flex flex-col gap-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5 transition-colors duration-300 ${
+                      highlighted ? "ring-2 ring-indigo-400 dark:ring-indigo-500" : ""
                     }`}
                   >
                     {/* Left */}
                     <div className="min-w-0">
                       <p className="text-lg font-semibold">{b.resourceName}</p>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                         <span>{b.departmentName}</span>
                         <span className="inline-flex items-center gap-1">
                           <Building2 className="h-3.5 w-3.5" aria-hidden="true" />
@@ -419,17 +388,17 @@ export default function BookingStatusPage({ user, onLogout }) {
 
                       <div className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 sm:gap-x-6">
                         <p className="flex items-center gap-2">
-                          <CalendarClock className="h-4 w-4 shrink-0 text-indigo-600" aria-hidden="true" />
+                          <CalendarClock className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                           {formatDate(b.date)}
                         </p>
                         <p className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 shrink-0 text-indigo-600" aria-hidden="true" />
+                          <Clock className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                           {formatTimeRange(b.startTime, b.endTime)}
                         </p>
                       </div>
 
                       {b.reasonLabel && (
-                        <span className="mt-3 inline-block rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-700">
+                        <span className="mt-3 inline-block rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 text-xs text-slate-700 dark:text-slate-300">
                           {b.reasonLabel}
                         </span>
                       )}
@@ -451,7 +420,7 @@ export default function BookingStatusPage({ user, onLogout }) {
                             onClick={() => handleCancel(b)}
                             disabled={isCancelling}
                             aria-label={`Cancel booking for ${b.resourceName}`}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-600 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-600 dark:border-red-500 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {isCancelling && (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
@@ -459,7 +428,7 @@ export default function BookingStatusPage({ user, onLogout }) {
                             Cancel
                           </button>
                         ) : (
-                          <span className="text-xs text-slate-400">Past</span>
+                          <span className="text-xs text-slate-400 dark:text-slate-500">Past</span>
                         ))}
                     </div>
                   </li>
