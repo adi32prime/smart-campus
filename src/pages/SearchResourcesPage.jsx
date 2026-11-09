@@ -8,7 +8,7 @@ import {
   Loader2,
   MapPin,
 } from "lucide-react";
-import ThemeToggle from "../components/ThemeToggle"; // <-- ADDED IMPORT
+import ThemeToggle from "../components/ThemeToggle";
 
 const RESOURCE_TYPES = [
   { value: "", label: "Any type" },
@@ -17,15 +17,15 @@ const RESOURCE_TYPES = [
   { value: "Conference Hall", label: "Conference Hall" },
 ];
 
-const TIME_SLOTS = [
-  { start: "09:00", end: "10:00", label: "9:00 AM \u2013 10:00 AM" },
-  { start: "10:00", end: "11:00", label: "10:00 AM \u2013 11:00 AM" },
-  { start: "11:00", end: "12:00", label: "11:00 AM \u2013 12:00 PM" },
-  { start: "12:00", end: "13:00", label: "12:00 PM \u2013 1:00 PM" },
-  { start: "13:00", end: "14:00", label: "1:00 PM \u2013 2:00 PM" },
-  { start: "14:00", end: "15:00", label: "2:00 PM \u2013 3:00 PM" },
-  { start: "15:00", end: "16:00", label: "3:00 PM \u2013 4:00 PM" },
-  { start: "16:00", end: "17:00", label: "4:00 PM \u2013 5:00 PM" },
+const BASE_TIME_SLOTS = [
+  { start: "09:00", end: "10:00", label: "9:00 AM \u2013 10:00 AM", hour: 9 },
+  { start: "10:00", end: "11:00", label: "10:00 AM \u2013 11:00 AM", hour: 10 },
+  { start: "11:00", end: "12:00", label: "11:00 AM \u2013 12:00 PM", hour: 11 },
+  { start: "12:00", end: "13:00", label: "12:00 PM \u2013 1:00 PM", hour: 12 },
+  { start: "13:00", end: "14:00", label: "1:00 PM \u2013 2:00 PM", hour: 13 },
+  { start: "14:00", end: "15:00", label: "2:00 PM \u2013 3:00 PM", hour: 14 },
+  { start: "15:00", end: "16:00", label: "3:00 PM \u2013 4:00 PM", hour: 15 },
+  { start: "16:00", end: "17:00", label: "4:00 PM \u2013 5:00 PM", hour: 16 },
 ];
 
 const FALLBACK_NODES = [
@@ -46,6 +46,29 @@ function getMaxDate() {
   return toDateString(d);
 }
 
+// Filter slots based on whether the selected date is today
+function getAvailableSlots(dateString) {
+  const now = new Date();
+  const todayStr = toDateString(now);
+
+  // If date is in the future, show all slots
+  if (dateString !== todayStr) {
+    return BASE_TIME_SLOTS;
+  }
+
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+
+  // Filter out slots that have already passed
+  const available = BASE_TIME_SLOTS.filter((slot) => {
+    if (slot.hour > currentHour) return true;
+    if (slot.hour === currentHour && currentMinute === 0) return true;
+    return false;
+  });
+
+  return available;
+}
+
 export default function SearchResourcesPage({ user, onLogout }) {
   const navigate = useNavigate();
 
@@ -57,6 +80,17 @@ export default function SearchResourcesPage({ user, onLogout }) {
   const [nodes, setNodes] = useState(FALLBACK_NODES);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Dynamically get the slots based on the date
+  const timeSlots = getAvailableSlots(date);
+  const slot = timeSlots[slotIdx] || timeSlots[0];
+
+  // Reset the slot index if the date changes and the previous index is now out of bounds
+  useEffect(() => {
+    if (slotIdx >= timeSlots.length) {
+      setSlotIdx(0);
+    }
+  }, [date, timeSlots.length, slotIdx]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -76,10 +110,9 @@ export default function SearchResourcesPage({ user, onLogout }) {
     return () => controller.abort();
   }, []);
 
-  const slot = TIME_SLOTS[slotIdx];
-
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!slot) return; // Safety check
     setError("");
     setSubmitting(true);
     try {
@@ -125,7 +158,6 @@ export default function SearchResourcesPage({ user, onLogout }) {
           </Link>
           <div className="flex items-center gap-3">
             
-            {/* THEME TOGGLE BUTTON */}
             <ThemeToggle />
             
             <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">
@@ -178,10 +210,19 @@ export default function SearchResourcesPage({ user, onLogout }) {
 
             <div>
               <label className="mb-1 block text-sm font-medium">Time slot</label>
-              <select value={slotIdx} onChange={(e) => setSlotIdx(Number(e.target.value))} className={fieldClass}>
-                {TIME_SLOTS.map((s, i) => (
-                  <option key={s.start} value={i}>{s.label}</option>
-                ))}
+              <select 
+                value={slotIdx} 
+                onChange={(e) => setSlotIdx(Number(e.target.value))} 
+                className={fieldClass}
+                disabled={timeSlots.length === 0}
+              >
+                {timeSlots.length === 0 ? (
+                  <option value="">No slots remaining for today</option>
+                ) : (
+                  timeSlots.map((s, i) => (
+                    <option key={s.start} value={i}>{s.label}</option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -227,7 +268,7 @@ export default function SearchResourcesPage({ user, onLogout }) {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || timeSlots.length === 0}
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {submitting ? (

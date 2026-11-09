@@ -71,9 +71,31 @@ function generateSlots() {
   for (let h = DAY_START_HOUR; h < DAY_END_HOUR; h += 1) {
     const start = `${pad(h)}:00`;
     const end = `${pad(h + 1)}:00`;
-    slots.push({ start, end, label: formatTimeRange(start, end) });
+    slots.push({ start, end, label: formatTimeRange(start, end), hour: h });
   }
   return slots;
+}
+
+// Filter out past slots if the date is today
+function getAvailableSlots(dateString) {
+  const allSlots = generateSlots();
+  const now = new Date();
+  const todayStr = toDateString(now);
+
+  if (dateString !== todayStr) {
+    return allSlots;
+  }
+
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+
+  return allSlots.filter((slot) => {
+    // If the slot's start hour is greater than current hour, it's available
+    if (slot.hour > currentHour) return true;
+    // If it's the same hour, allow it only if we are exactly at minute 0 (rare) or just strictly block it if minutes > 0
+    if (slot.hour === currentHour && currentMinute === 0) return true;
+    return false;
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -96,17 +118,17 @@ export default function ResourceListPage({ user, onLogout }) {
   const typeName = TYPE_NAMES[typeId] ?? "Resources";
   const TypeIcon = TYPE_ICONS[typeId] ?? BookOpen;
 
-  const slots = generateSlots();
+  const slots = getAvailableSlots(date);
   const selectedSlot = slots[slotIndex] ?? slots[0];
-  const startTime = selectedSlot.start;
-  const endTime = selectedSlot.end;
+  const startTime = selectedSlot?.start || "10:00";
+  const endTime = selectedSlot?.end || "11:00";
 
   const minDate = getToday();
   const maxDate = getMaxDate();
 
   useEffect(() => {
     setSlotIndex(0);
-  }, [typeId]);
+  }, [typeId, date]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -277,12 +299,17 @@ export default function ResourceListPage({ user, onLogout }) {
                 value={slotIndex}
                 onChange={(e) => setSlotIndex(Number(e.target.value))}
                 className={fieldClass}
+                disabled={slots.length === 0}
               >
-                {slots.map((slot, i) => (
-                  <option key={slot.start} value={i}>
-                    {slot.label}
-                  </option>
-                ))}
+                {slots.length === 0 ? (
+                  <option value="">No slots remaining for today</option>
+                ) : (
+                  slots.map((slot, i) => (
+                    <option key={slot.start} value={i}>
+                      {slot.label}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>
