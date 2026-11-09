@@ -1,6 +1,7 @@
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.sql.Connection;
 
 /**
  * BookingService — orchestrates booking decisions for Team A.
@@ -66,26 +67,108 @@ public class BookingService {
                 return r;
             }
 
-            int confirmed = Db.countConfirmed(resourceId, slotId, date);
+            // Use a single database connection to lock the rows and prevent race conditions
+            try (Connection conn = Db.get()) {
+                conn.setAutoCommit(false);
 
-            if (confirmed == 0) {
-                // Free → Confirmed
-                int id = Db.insertBooking(userId, resourceId, slotId, date, purpose, "Confirmed", priority);
-                if (id < 0) {
-                    r.ok = false;
-                    r.status = "Rejected";
-                    r.message = "Insert failed";
+                try {
+                    // 1. Lock the resource row to serialize concurrent requests
+                    String lockSql = "SELECT ResourceId FROM RESOURCES WHERE ResourceId = ? FOR UPDATE";
+                    try (java.sql.PreparedStatement ps = conn.prepareStatement(lockSql)) {
+                        ps.setInt(1, resourceId);
+                        ps.executeQuery();
+                    }
+
+                    // 2. Check if occupied (using the SAME connection inside the transaction)
+                    int confirmed = 0;
+                    String countSql = "SELECT COUNT(*) FROM BOOKINGS WHERE ResourceId=? AND SlotId=? AND BookingDate=? AND Status IN ('Pending','Confirmed')";
+                    try (java.sql.PreparedStatement ps = conn.prepareStatement(countSql)) {
+                        ps.setInt(1, resourceId);
+                        ps.setInt(2, slotId);
+                        ps.setString(3, date);
+                        try (java.sql.ResultSet rs = ps.executeQuery()) {
+                            if (rs.next()) confirmed = rs.getInt(1);
+                        }
+                    }
+
+                    if (confirmed == 0) {
+                        // Free → Confirmed
+                        String insertSql = "INSERT INTO BOOKINGS (UserId, ResourceId, SlotId, BookingDate, Purpose, Status, Priority) VALUES (?,?,?,?,?,?,?)";
+                        int id = -1;
+                        try (java.sql.PreparedStatement ps = conn.prepareStatement(insertSql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+                            ps.setInt(1, userId);
+                            ps.setInt(2, resourceId);
+                            ps.setInt(3, slotId);
+                            ps.setString(4, date);
+                            ps.setString(5, purpose);
+                            ps.setString(6, "Confirmed");
+                            ps.setInt(7, priority);
+                            ps.executeUpdate();
+                            try (java.sql.ResultSet rs = ps.getGeneratedKeys()) {
+                                if (rs.next()) id = rs.getInt(1);
+                            }
+                        }
+                        
+                        conn.commit();
+                        Db.insertAudit(userId, "CREATE_BOOKING", "BOOKING", id, "Confirmed priority=" + priority);
+                        r.bookingId = id;
+                        r.status = "Confirmed";
+                        r.message = "Booking confirmed";
+                        return r;
+                    }
+
+                    // Occupied → Waitlisted
+                    String insertSql = "INSERT INTO BOOKINGS (UserId, ResourceId, SlotId, BookingDate, Purpose, Status, Priority) VALUES (?,?,?,?,?,?,?)";
+                    int id = -1;
+                    try (java.sql.PreparedStatement ps = conn.prepareStatement(insertSql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+                        ps.setInt(1, userId);
+                        ps.setInt(2, resourceId);
+                        ps.setInt(3, slotId);
+                        ps.setString(4, date);
+                        ps.setString(5, purpose);
+                        ps.setString(6, "Waitlisted");
+                        ps.setInt(7, priority);
+                        ps.executeUpdate();
+                        try (java.sql.ResultSet rs = ps.getGeneratedKeys()) {
+                            if (rs.next()) id = rs.getInt(1);
+                        }
+                    }
+
+                    // Compute waitlist position INSIDE the transaction
+                    int pos = 1;
+                    String posSql = "SELECT COUNT(*) FROM BOOKINGS WHERE ResourceId=? AND SlotId=? AND BookingDate=? AND Status='Waitlisted' AND (Priority < ? OR (Priority = ? AND BookingId < ?))";
+                    try (java.sql.PreparedStatement ps = conn.prepareStatement(posSql)) {
+                        ps.setInt(1, resourceId);
+                        ps.setInt(2, slotId);
+                        ps.setString(3, date);
+                        ps.setInt(4, priority);
+                        ps.setInt(5, priority);
+                        ps.setInt(6, id);
+                        try (java.sql.ResultSet rs = ps.executeQuery()) {
+                            if (rs.next()) pos = rs.getInt(1) + 1;
+                        }
+                    }
+
+                    // Update position inside the transaction
+                    try (java.sql.PreparedStatement ps = conn.prepareStatement("UPDATE BOOKINGS SET WaitlistPosition = ? WHERE BookingId = ?")) {
+                        ps.setInt(1, pos);
+                        ps.setInt(2, id);
+                        ps.executeUpdate();
+                    }
+
+                    conn.commit();
+                    Db.insertAudit(userId, "WAITLIST_BOOKING", "BOOKING", id, "position=" + pos + " priority=" + priority);
+                    r.bookingId = id;
+                    r.status = "Waitlisted";
+                    r.waitlistPosition = pos;
+                    r.message = "Resource is occupied. You are waitlist #" + pos;
                     return r;
-                }
-                Db.insertAudit(userId, "CREATE_BOOKING", "BOOKING", id, "Confirmed priority=" + priority);
-                r.bookingId = id;
-                r.status = "Confirmed";
-                r.message = "Booking confirmed";
-                return r;
-            }
 
-            // Occupied → Waitlisted
-            int id = Db.insertBooking(userId, resourceId, slotId, date, purpose, "Waitlisted", priority);
+                } catch (Exception e) {
+                    conn.rollback();
+                    throw e;
+                }
+            }
             if (id < 0) {
                 r.ok = false;
                 r.status = "Rejected";
