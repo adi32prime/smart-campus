@@ -5,13 +5,6 @@ import java.sql.Connection;
 
 /**
  * BookingService — orchestrates booking decisions for Team A.
- *
- * Flow:
- *   1. Resolve slotId + resourceId from request
- *   2. If resource is free → insert Confirmed with FCFS/priority rule
- *   3. If resource is taken → insert Waitlisted with computed position
- *
- * All DB access goes through Db.java.
  */
 public class BookingService {
 
@@ -169,23 +162,6 @@ public class BookingService {
                     throw e;
                 }
             }
-            if (id < 0) {
-                r.ok = false;
-                r.status = "Rejected";
-                r.message = "Insert failed";
-                return r;
-            }
-
-            int pos = Db.computeWaitlistPosition(resourceId, slotId, date, priority, id);
-            Db.updateWaitlistPosition(id, pos);
-            Db.insertAudit(userId, "WAITLIST_BOOKING", "BOOKING", id,
-                    "position=" + pos + " priority=" + priority);
-
-            r.bookingId = id;
-            r.status = "Waitlisted";
-            r.waitlistPosition = pos;
-            r.message = "Resource is occupied. You are waitlist #" + pos;
-            return r;
 
         } catch (SQLException e) {
             r.ok = false;
