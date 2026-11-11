@@ -10,6 +10,7 @@ import {
   Info,
   CheckCircle2,
   ArrowLeft,
+  MapPin,
 } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 import CampusMap from "../components/CampusMap";
@@ -150,8 +151,10 @@ export default function BookingFormPage({ user, onLogout }) {
 
   // State for the map
   const [mapPath, setMapPath] = useState([]);
-  const [actualSourceNode, setActualSourceNode] = useState(null);
+  const [currentSource, setCurrentSource] = useState(urlSourceNodeId || "N1");
+  const [allNodes, setAllNodes] = useState([]);
 
+  // Fetch the resource details
   useEffect(() => {
     if (missingParams) return;
     const controller = new AbortController();
@@ -166,6 +169,13 @@ export default function BookingFormPage({ user, onLogout }) {
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const data = await res.json();
         setResource(data);
+        
+        // If no source in URL, fallback to the department's node
+        if (!urlSourceNodeId) {
+          const deptId = DEPT_IDS_BY_NAME[data.departmentName];
+          setCurrentSource(DEPT_NODE_MAP[deptId] || "N1");
+        }
+        
         setLoading(false);
       } catch (err) {
         if (err.name === "AbortError") return;
@@ -177,30 +187,35 @@ export default function BookingFormPage({ user, onLogout }) {
 
     load();
     return () => controller.abort();
-  }, [resourceId, missingParams, reloadKey]);
+  }, [resourceId, missingParams, reloadKey, urlSourceNodeId]);
 
-  // Fetch the path for the map once we have the resource
+  // Fetch the locations dropdown
   useEffect(() => {
-    if (!resource) return;
-    
-    // Determine source: URL > Department Node > Fallback to Main Gate (N1)
-    let source = urlSourceNodeId;
-    if (!source) {
-      const deptName = resource.departmentName;
-      const deptId = deptName ? DEPT_IDS_BY_NAME[deptName] : undefined;
-      source = DEPT_NODE_MAP[deptId] || "N1"; 
-    }
-    
-    setActualSourceNode(source);
+    fetch("/api/campus-nodes")
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const locations = data.filter(n => {
+            const t = String(n.nodeType || '').toLowerCase();
+            return ['gate', 'library', 'office', 'department'].includes(t);
+          });
+          setAllNodes(locations);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-    const dest = resource.roomNumber; // The node ID for the resource
-    
+  // Recalculate the route whenever currentSource or resource changes
+  useEffect(() => {
+    if (!resource || !currentSource) return;
+    const dest = resource.roomNumber;
+
     async function fetchRoute() {
       try {
         const res = await fetch("/api/route", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sourceNodeId: source, destNodeId: dest }),
+          body: JSON.stringify({ sourceNodeId: currentSource, destNodeId: dest }),
         });
         if (res.ok) {
           const data = await res.json();
@@ -214,7 +229,7 @@ export default function BookingFormPage({ user, onLogout }) {
     }
 
     fetchRoute();
-  }, [resource, urlSourceNodeId]);
+  }, [resource, currentSource]);
 
   function clearError(field) {
     setErrors((prev) => {
@@ -581,14 +596,33 @@ export default function BookingFormPage({ user, onLogout }) {
 
             {/* RIGHT: Sidebar with Map */}
             <aside className="space-y-6 lg:col-span-2">
-              <section aria-labelledby="map-heading" className={`${cardClass} flex flex-col h-[400px]`}>
+              <section aria-labelledby="map-heading" className={`${cardClass} flex flex-col`}>
+                {/* Change Source Dropdown */}
+                <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-700">
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Starting from:
+                  </span>
+                  <select
+                    value={currentSource}
+                    onChange={(e) => setCurrentSource(e.target.value)}
+                    className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-800 focus:border-indigo-500 focus:outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
+                  >
+                    {allNodes.map(n => (
+                      <option key={n.nodeId} value={n.nodeId}>{n.nodeName}</option>
+                    ))}
+                  </select>
+                </div>
+                
                 <h2 id="map-heading" className="sr-only">Campus Route</h2>
-                <CampusMap 
-                  userNodeId={actualSourceNode || "N1"}
-                  selectedNodeId={resource?.roomNumber}
-                  path={mapPath}
-                  className="flex-1"
-                />
+                <div className="flex-1 min-h-[300px]">
+                  <CampusMap 
+                    userNodeId={currentSource}
+                    selectedNodeId={resource?.roomNumber}
+                    path={mapPath}
+                    className="h-full"
+                  />
+                </div>
               </section>
 
               {priority && (
