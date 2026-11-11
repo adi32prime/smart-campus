@@ -174,11 +174,13 @@ export default function DepartmentPage({ user, onLogout }) {
             ))}
 
           {!loading &&
-            types.map((type) => {
-              const Icon = TYPE_ICONS[type.typeName] || Building2;
-              return (
-                <button
-                  key={type.typeId}
+            types
+              .filter((type) => type.count > 0) // <-- ADD THIS LINE to hide 0-count cards
+              .map((type) => {
+                const Icon = TYPE_ICONS[type.typeName] || Building2;
+                return (
+                  <button
+                    key={type.typeId}
                   type="button"
                   onClick={() =>
                     navigate(`/dashboard/department/${deptId}/${type.typeId}`)

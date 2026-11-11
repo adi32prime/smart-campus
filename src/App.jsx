@@ -11,7 +11,7 @@ import AdminReportsPage from './pages/AdminReportsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
 import SearchResourcesPage from './pages/SearchResourcesPage';
-import SearchResultsPage from './pages/SearchResultsPage';
+
 
 import useSSE from './hooks/useSSE';
 import ToastNotification from './components/ToastNotification';
@@ -113,10 +113,6 @@ export default function App() {
         <Route
           path="/dashboard/search"
           element={RequireUser(<SearchResourcesPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
-        />
-        <Route
-          path="/dashboard/search-results"
-          element={RequireUser(<SearchResultsPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
         />
 
         {/* Admin routes */}
