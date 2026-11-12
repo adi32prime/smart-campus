@@ -112,9 +112,8 @@ export async function callSearch({
       return { ok: false, error: data.error || `Search returned ${res.status}`, data };
     }
 
-    // --- FINAL ULTIMATE FIX: Pure physical pathfinding ---
+    // --- CLEANUP: Trust Team B's path, but fix department gaps ---
     if (Array.isArray(data)) {
-      // 1. Map every room to its true physical department
       const ROOM_TO_DEPT = {
         L1: 'N4', L2: 'N4', L3: 'N4', L4: 'N4', C1: 'N4', C2: 'N4', C3: 'N4', CH1: 'N4',
         EL1: 'N6', EL2: 'N6', EC1: 'N6', EC2: 'N6', EC3: 'N6',
@@ -122,65 +121,34 @@ export async function callSearch({
         ML1: 'N8', ML2: 'N8', MC1: 'N8', MC2: 'N8'
       };
       
-      // 2. Define the actual connections based on the visual map (Adjacency List)
-      const CONNECTIONS = {
-        'N1': ['N4', 'N5'],
-        'N2': ['N5', 'N8'],
-        'N3': [],
-        'N4': ['N1', 'N6'],
-        'N5': ['N1', 'N2'],
-        'N6': ['N4', 'N7'],
-        'N7': ['N6', 'N8'],
-        'N8': ['N7', 'N2']
-      };
-
-      // 3. BFS to find the shortest path between two nodes
-      function findPath(start, end) {
-        if (start === end) return [start];
-        const queue = [[start]];
-        const visited = new Set([start]);
-
-        while (queue.length > 0) {
-          const path = queue.shift();
-          const node = path[path.length - 1];
-
-          for (const neighbor of (CONNECTIONS[node] || [])) {
-            if (neighbor === end) return [...path, neighbor];
-            if (!visited.has(neighbor)) {
-              visited.add(neighbor);
-              queue.push([...path, neighbor]);
-            }
-          }
-        }
-        return [];
-      }
+      const SPINE = ['N1', 'N4', 'N6', 'N7', 'N8', 'N2', 'N3', 'N5'];
 
       data.forEach(item => {
-        const startNode = sourceNodeId || 'N1';
-        const destNode = item.nodeId;
-        if (!destNode) return;
-
-        const path = [];
-        let startDept = ROOM_TO_DEPT[startNode] || startNode;
-        let destDept = ROOM_TO_DEPT[destNode] || destNode;
-
-        // Add the starting room
-        if (startDept !== startNode) path.push(startNode);
+        if (!item.path || !Array.isArray(item.path) || item.path.length === 0) return;
         
-        // Find the path between the departments/gates
-        const deptPath = findPath(startDept, destDept);
-        
-        // Combine start room + spine path + dest room
-        path.push(...deptPath);
-        if (destDept !== destNode) path.push(destNode);
+        const originalPath = item.path;
+        const newPath = [];
 
-        // Clean up duplicates
-        const finalPath = [];
-        for (const node of path) {
-          if (finalPath[finalPath.length - 1] !== node) finalPath.push(node);
-        }
+        originalPath.forEach((node, i) => {
+          const prevNode = newPath[newPath.length - 1];
+          
+          // If the node is a room, ensure its department comes first
+          if (ROOM_TO_DEPT[node] && prevNode !== ROOM_TO_DEPT[node]) {
+            const dept = ROOM_TO_DEPT[node];
+            // Insert the department right before the room
+            if (newPath[newPath.length - 1] !== dept) {
+              newPath.push(dept);
+            }
+            newPath.push(node);
+          } else {
+            // If it's not a room, just push it
+            if (prevNode !== node) {
+              newPath.push(node);
+            }
+          }
+        });
 
-        item.path = finalPath;
+        item.path = newPath;
       });
     }
 
@@ -190,7 +158,6 @@ export async function callSearch({
     return { ok: false, error: 'Search unreachable' };
   }
 }
-
 /**
  * Map our 6 reason categories to Team A's priority scale.
  * Team A: smaller number = higher priority (1 = highest, 3 = lowest)
