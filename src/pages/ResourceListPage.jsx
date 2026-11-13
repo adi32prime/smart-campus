@@ -12,6 +12,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
+import NotificationBell from "../components/NotificationBell";
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                           */
@@ -218,6 +219,7 @@ export default function ResourceListPage({ user, onLogout }) {
 
           <div className="flex items-center gap-3">
             <NavIcons />
+            <NotificationBell userId={user?.userId} />
             <ThemeToggle />
             
             <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">

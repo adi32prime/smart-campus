@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import NavIcons from "../components/NavIcons";
+import NotificationBell from "../components/NotificationBell";
 import {
   LogOut,
   AlertCircle,
@@ -213,6 +214,7 @@ export default function BookingStatusPage({ user, onLogout }) {
 
           <div className="flex items-center gap-3">
             <NavIcons current="bookings" />
+            <NotificationBell userId={user?.userId} />
             <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">
               <span className="font-medium">{user?.userId}</span>
               {user?.role && <span className="text-slate-500 dark:text-slate-400"> &middot; {user.role}</span>}

@@ -15,6 +15,7 @@ import ThemeToggle from "../components/ThemeToggle";
 import CampusMap from "../components/CampusMap";
 import { CAMPUS_EDGES } from "../data/campusGraph";
 import NavIcons from "../components/NavIcons";
+import NotificationBell from "../components/NotificationBell";
 
 const RESOURCE_TYPES = [
   { value: "", label: "Select a type" },
@@ -295,6 +296,7 @@ export default function SearchResourcesPage({ user, onLogout }) {
           </div>
           <div className="flex items-center gap-3">
             <NavIcons current="search" />
+            <NotificationBell userId={user?.userId} />
             <ThemeToggle />
             <div className="hidden sm:block rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">
               <span className="font-medium">{user?.userId}</span>
