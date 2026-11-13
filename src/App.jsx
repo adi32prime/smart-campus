@@ -18,6 +18,7 @@ import ToastNotification from './components/ToastNotification';
 
 export default function App() {
   const [user, setUser] = useState(null);
+const [isReady, setIsReady] = useState(false);
   const [toastData, setToastData] = useState(null);
   
   // Only connect to SSE if the user is logged in
@@ -35,6 +36,7 @@ export default function App() {
     if (storedUser) {
       try { setUser(JSON.parse(storedUser)); } catch { /* ignore */ }
     }
+    setIsReady(true);
   }, []);
 
   async function handleLogin({ role, userId, password }) {
@@ -68,6 +70,13 @@ export default function App() {
   }
 
   function RequireUser(children, roles = []) {
+    if (!isReady) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+      );
+    }
     if (!user) return <Navigate to="/login" replace />;
     if (roles.length && !roles.includes(user.role)) {
       return <Navigate to="/login" replace />;
@@ -81,7 +90,11 @@ export default function App() {
         <Route
           path="/login"
           element={
-            user ? (
+            !isReady ? (
+              <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              </div>
+            ) : user ? (
               <Navigate to={user.role === 'Admin' ? '/admin' : '/dashboard'} replace />
             ) : (
               <LoginPage onLogin={handleLogin} />
