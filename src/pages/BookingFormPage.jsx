@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 import CampusMap from "../components/CampusMap";
+import NavIcons from "../components/NavIcons";
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                           */
@@ -335,6 +336,7 @@ export default function BookingFormPage({ user, onLogout }) {
           </Link>
 
           <div className="flex items-center gap-3">
+            <NavIcons />
             <ThemeToggle />
             
             <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">

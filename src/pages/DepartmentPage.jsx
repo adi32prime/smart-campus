@@ -12,6 +12,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
+import NavIcons from "../components/NavIcons";
 
 // Temporary lookup until the backend provides department names.
 const DEPT_NAMES = {
@@ -44,7 +45,8 @@ function TopBar({ user, onLogout }) {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
-                    <ThemeToggle />
+          <NavIcons />
+          <ThemeToggle />
 
           <div className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-2.5 py-1.5 text-sm">
             <span className="text-slate-600 dark:text-slate-300">ID: {user?.userId}</span>

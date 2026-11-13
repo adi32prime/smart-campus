@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import NavIcons from "../components/NavIcons";
 import {
   ArrowRight,
   LogOut,
@@ -216,6 +217,7 @@ export default function ResourceListPage({ user, onLogout }) {
           </Link>
 
           <div className="flex items-center gap-3">
+            <NavIcons />
             <ThemeToggle />
             
             <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">
