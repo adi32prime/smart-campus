@@ -311,12 +311,12 @@ export default function SearchResourcesPage({ user, onLogout }) {
       </header>
 
       {/* Main Row */}
-      <div className="flex-1 flex relative overflow-hidden">
+      <div className="flex-1 relative overflow-hidden">
         
-        {/* LEFT SIDEBAR (Desktop) */}
+        {/* LEFT SIDEBAR (Desktop) — Overlay style */}
         <aside 
-          className={`shrink-0 hidden lg:flex flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 ${
-            isSidebarOpen ? "w-[320px]" : "w-0 border-none"
+          className={`absolute top-0 left-0 bottom-0 z-20 hidden lg:flex flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl transition-transform duration-300 ${
+            isSidebarOpen ? "translate-x-0 w-[320px]" : "-translate-x-full w-[320px]"
           } overflow-hidden`}
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
@@ -368,25 +368,27 @@ export default function SearchResourcesPage({ user, onLogout }) {
             className="w-full h-full !rounded-none !border-none"
           />
 
-          {/* Floating Book Now Pill (Bottom-Right) */}
+          {/* Floating Book Now Pill */}
           {selectedResource && (
-            <div className="absolute bottom-6 right-6 z-30">
-              <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-2xl">
-                <div className="pl-2 pr-4 border-r border-slate-200 dark:border-slate-700">
+            <div className="absolute bottom-20 left-6 z-50">
+              <div className="flex w-64 flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-2xl">
+                <div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Selected</p>
-                  <p className="text-base font-bold text-indigo-600 dark:text-indigo-400">
+                  <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400 leading-tight">
                     {selectedResource.resourceName}
                   </p>
-                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                    {selectedResource.distance}m · Cap {selectedResource.capacity}
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
+                    {selectedResource.distance}m · Capacity {selectedResource.capacity}
                   </p>
                 </div>
-                <button onClick={handleBook} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                  <BookOpen className="h-4 w-4" /> Book Now
-                </button>
-                <button onClick={() => setSelectedResource(null)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                  <X className="h-5 w-5" />
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={handleBook} className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <BookOpen className="h-4 w-4" /> Book Now
+                  </button>
+                  <button onClick={() => setSelectedResource(null)} className="rounded-xl border border-slate-200 dark:border-slate-700 p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:text-slate-200">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
             </div>
           )}
