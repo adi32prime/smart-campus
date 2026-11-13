@@ -8,8 +8,9 @@ import {
   Loader2,
   CalendarClock,
   Info,
-  CheckCircle2,
   ArrowLeft,
+  Maximize,
+  Minimize,
   MapPin,
 } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
@@ -50,15 +51,12 @@ const TYPE_IDS_BY_NAME = {
   "Conference Hall": 3, "Conference Halls": 3,
 };
 
-// Fallback starting nodes for direct bookings based on department
 const DEPT_NODE_MAP = {
   A1: "N4", // CSE
   B1: "N6", // Electrical
   C1: "N7", // AIML
   D1: "N8", // Mechanical
 };
-
-const NOTES_MAX = 200;
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -87,10 +85,6 @@ function formatDate(dateString) {
     year: "numeric",
   });
 }
-
-/* ------------------------------------------------------------------ */
-/* Small presentational pieces                                         */
-/* ------------------------------------------------------------------ */
 
 function Field({ label, children }) {
   return (
@@ -140,9 +134,9 @@ export default function BookingFormPage({ user, onLogout }) {
   const isWaitlistMode = searchParams.get("waitlist") === "1";
   const missingParams = !date || !startTime || !endTime;
 
+  // --- ALL STATE VARIABLES DEFINED HERE ---
   const [resource, setResource] = useState(null);
   const [reasonId, setReasonId] = useState("");
-  const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -150,10 +144,10 @@ export default function BookingFormPage({ user, onLogout }) {
   const [submitError, setSubmitError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
 
-  // State for the map
   const [mapPath, setMapPath] = useState([]);
   const [currentSource, setCurrentSource] = useState(urlSourceNodeId || "N1");
   const [allNodes, setAllNodes] = useState([]);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
 
   // Fetch the resource details
   useEffect(() => {
@@ -171,7 +165,6 @@ export default function BookingFormPage({ user, onLogout }) {
         const data = await res.json();
         setResource(data);
         
-        // If no source in URL, fallback to the department's node
         if (!urlSourceNodeId) {
           const deptId = DEPT_IDS_BY_NAME[data.departmentName];
           setCurrentSource(DEPT_NODE_MAP[deptId] || "N1");
@@ -190,7 +183,7 @@ export default function BookingFormPage({ user, onLogout }) {
     return () => controller.abort();
   }, [resourceId, missingParams, reloadKey, urlSourceNodeId]);
 
-  // Fetch the locations dropdown
+  // Fetch locations dropdown
   useEffect(() => {
     fetch("/api/campus-nodes")
       .then(r => r.json())
@@ -206,7 +199,7 @@ export default function BookingFormPage({ user, onLogout }) {
       .catch(() => {});
   }, []);
 
-  // Recalculate the route whenever currentSource or resource changes
+  // Recalculate route
   useEffect(() => {
     if (!resource || !currentSource) return;
     const dest = resource.roomNumber;
@@ -270,21 +263,14 @@ export default function BookingFormPage({ user, onLogout }) {
           endTime,
           reasonId,
           reasonLabel: reason ? reason.label : "",
-          notes: notes.trim(),
         }),
       });
 
       let data = null;
-      try {
-        data = await res.json();
-      } catch {
-        data = null;
-      }
+      try { data = await res.json(); } catch { data = null; }
 
       if (!res.ok) {
-        throw new Error(
-          data?.message || data?.error || "Couldn't submit your request. Please try again."
-        );
+        throw new Error(data?.message || data?.error || "Couldn't submit your request.");
       }
 
       const bookingId = data?.bookingId ?? data?.id ?? "";
@@ -298,8 +284,15 @@ export default function BookingFormPage({ user, onLogout }) {
       if (bookingId !== "") params.set("id", String(bookingId));
       navigate(`/dashboard/bookings?${params.toString()}`);
     } catch (err) {
-      setSubmitError(err.message || "Couldn't submit your request. Please try again.");
+      setSubmitError(err.message || "Couldn't submit your request.");
       setSubmitting(false);
+    }
+  }
+    function handleSourceNodeClick(nodeId) {
+    // Only allow the 8 source-eligible nodes to be clicked
+    const allowedSources = ['N1', 'N2', 'N3', 'N5', 'N4', 'N6', 'N7', 'N8'];
+    if (allowedSources.includes(nodeId)) {
+      setCurrentSource(nodeId);
     }
   }
 
@@ -323,22 +316,13 @@ export default function BookingFormPage({ user, onLogout }) {
       {/* Top bar */}
       <header className="sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors duration-300">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
-              SC
-            </span>
-            <span className="hidden text-sm font-semibold sm:block">
-              Smart Campus Lab &amp; Resource Optimizer
-            </span>
+          <Link to="/dashboard" className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">SC</span>
+            <span className="hidden text-sm font-semibold sm:block">Smart Campus Lab &amp; Resource Optimizer</span>
           </Link>
-
           <div className="flex items-center gap-3">
             <NavIcons />
             <ThemeToggle />
-            
             <div className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1 text-xs">
               <span className="font-medium">{user?.userId}</span>
               {user?.role && <span className="text-slate-500 dark:text-slate-400"> &middot; {user.role}</span>}
@@ -346,9 +330,9 @@ export default function BookingFormPage({ user, onLogout }) {
             <button
               type="button"
               onClick={onLogout}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
             >
-              <LogOut className="h-4 w-4" aria-hidden="true" />
+              <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
@@ -359,47 +343,32 @@ export default function BookingFormPage({ user, onLogout }) {
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="mb-5">
           <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
-            <li>
-              <Link to="/dashboard" className={linkClass}>
-                Dashboard
-              </Link>
-            </li>
+            <li><Link to="/dashboard" className={linkClass}>Dashboard</Link></li>
             {deptName && (
               <>
-                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                <ChevronRight className="h-4 w-4" />
                 <li>
                   {deptId ? (
-                    <Link to={`/dashboard/department/${deptId}`} className={linkClass}>
-                      {deptName}
-                    </Link>
-                  ) : (
-                    deptName
-                  )}
+                    <Link to={`/dashboard/department/${deptId}`} className={linkClass}>{deptName}</Link>
+                  ) : (deptName)}
                 </li>
               </>
             )}
             {typeName && (
               <>
-                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                <ChevronRight className="h-4 w-4" />
                 <li>
                   {deptId && typeId ? (
-                    <Link to={`/dashboard/department/${deptId}/${typeId}`} className={linkClass}>
-                      {typeName}
-                    </Link>
-                  ) : (
-                    typeName
-                  )}
+                    <Link to={`/dashboard/department/${deptId}/${typeId}`} className={linkClass}>{typeName}</Link>
+                  ) : (typeName)}
                 </li>
               </>
             )}
-            <ChevronRight className="h-4 w-4" aria-hidden="true" />
-            <li aria-current="page" className="font-medium text-slate-800 dark:text-slate-200">
-              Book
-            </li>
+            <ChevronRight className="h-4 w-4" />
+            <li aria-current="page" className="font-medium text-slate-800 dark:text-slate-200">Book</li>
           </ol>
         </nav>
 
-        {/* Page header */}
         <div className="mb-6">
           <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Booking Request</p>
           <h1 className="text-3xl font-bold">Confirm your booking</h1>
@@ -409,52 +378,33 @@ export default function BookingFormPage({ user, onLogout }) {
         </div>
 
         {missingParams ? (
-          <div
-            role="alert"
-            className="flex flex-col gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-4 sm:flex-row sm:items-center sm:justify-between"
-          >
+          <div role="alert" className="flex flex-col gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
-              <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <AlertCircle className="h-5 w-5 shrink-0" />
               Missing booking details. Please go back and select a slot again.
             </div>
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1.5 self-start rounded-lg border border-red-300 dark:border-red-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 sm:self-auto"
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              Back to dashboard
+            <Link to="/dashboard" className="inline-flex items-center gap-1.5 self-start rounded-lg border border-red-300 dark:border-red-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 sm:self-auto">
+              <ArrowLeft className="h-4 w-4" /> Back to dashboard
             </Link>
           </div>
         ) : loadError ? (
-          <ErrorBanner
-            message="Couldn't load resource details. Please try again."
-            onRetry={() => setReloadKey((k) => k + 1)}
-          />
+          <ErrorBanner message="Couldn't load resource details. Please try again." onRetry={() => setReloadKey((k) => k + 1)} />
         ) : (
           <div className="grid gap-6 lg:grid-cols-5">
             {/* LEFT: summary + form */}
             <div className="lg:col-span-3">
               {loading || !resource ? (
-                <div className="animate-pulse" aria-busy="true" aria-label="Loading booking form">
+                <div className="animate-pulse" aria-busy="true">
                   <div className="h-44 rounded-xl bg-slate-200 dark:bg-slate-800" />
                   <div className="mt-6 space-y-4">
                     <div className="h-16 rounded-xl bg-slate-200 dark:bg-slate-800" />
                     <div className="h-16 rounded-xl bg-slate-200 dark:bg-slate-800" />
-                    <div className="h-16 rounded-xl bg-slate-200 dark:bg-slate-800" />
                     <div className="h-24 rounded-xl bg-slate-200 dark:bg-slate-800" />
-                    <div className="flex gap-3">
-                      <div className="h-10 w-24 rounded-lg bg-slate-200 dark:bg-slate-800" />
-                      <div className="h-10 w-40 rounded-lg bg-slate-200 dark:bg-slate-800" />
-                    </div>
                   </div>
                 </div>
               ) : (
                 <>
-                  {/* Resource summary */}
-                  <section aria-labelledby="summary-heading" className={cardClass}>
-                    <h2 id="summary-heading" className="sr-only">
-                      Resource summary
-                    </h2>
+                  <section className={cardClass}>
                     <div className="mb-4 flex flex-wrap items-center gap-3">
                       <p className="text-lg font-semibold">{resource.resourceName}</p>
                       <span className="rounded-full bg-indigo-50 dark:bg-indigo-900/50 px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-400">
@@ -468,7 +418,7 @@ export default function BookingFormPage({ user, onLogout }) {
                       <Field label="Capacity">{resource.capacity}</Field>
                       <Field label="Date">
                         <span className="inline-flex items-center gap-1.5">
-                          <CalendarClock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+                          <CalendarClock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                           {formatDate(date)}
                         </span>
                       </Field>
@@ -476,12 +426,11 @@ export default function BookingFormPage({ user, onLogout }) {
                     </div>
                   </section>
 
-                  {/* Request form */}
                   <form onSubmit={handleSubmit} noValidate className="mt-6">
                     <div className={`${cardClass} space-y-5`}>
                       {isWaitlistMode && (
                         <div className="flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-800 dark:text-amber-400">
-                          <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                          <Info className="mt-0.5 h-4 w-4 shrink-0" />
                           <div>
                             <p className="font-medium">This resource is currently occupied.</p>
                             <p className="text-xs">
@@ -493,7 +442,6 @@ export default function BookingFormPage({ user, onLogout }) {
                       )}
                       <h2 className="text-base font-semibold">Request details</h2>
 
-                      {/* Reason */}
                       <div>
                         <label htmlFor="reason" className="mb-1 block text-sm font-medium">
                           Purpose / Reason <span className="text-red-500">*</span>
@@ -504,21 +452,11 @@ export default function BookingFormPage({ user, onLogout }) {
                         <select
                           id="reason"
                           value={reasonId}
-                          onChange={(e) => {
-                            setReasonId(e.target.value);
-                            clearError("reason");
-                          }}
-                          aria-required="true"
-                          aria-invalid={errors.reason ? "true" : "false"}
-                          aria-describedby={errors.reason ? "reason-help reason-error" : "reason-help"}
+                          onChange={(e) => { setReasonId(e.target.value); clearError("reason"); }}
                           className={`${inputClass} ${borderFor(errors.reason)}`}
                         >
                           <option value="">Select a reason</option>
-                          {REASONS.map((r) => (
-                            <option key={r.id} value={r.id}>
-                              {r.label}
-                            </option>
-                          ))}
+                          {REASONS.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
                         </select>
                         {errors.reason && (
                           <p id="reason-error" className="mt-1 text-xs text-red-600 dark:text-red-400">
@@ -526,37 +464,11 @@ export default function BookingFormPage({ user, onLogout }) {
                           </p>
                         )}
                       </div>
-
-                      {/* Notes */}
-                      <div>
-                        <label htmlFor="notes" className="mb-1 block text-sm font-medium">
-                          Additional Notes
-                        </label>
-                        <p id="notes-help" className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-                          Optional. Any extra details for the coordinator.
-                        </p>
-                        <textarea
-                          id="notes"
-                          rows={3}
-                          maxLength={NOTES_MAX}
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value.slice(0, NOTES_MAX))}
-                          aria-describedby="notes-help notes-count"
-                          className={`${inputClass} resize-none ${borderFor(false)}`}
-                        />
-                        <p id="notes-count" className="mt-1 text-right text-xs text-slate-500 dark:text-slate-400">
-                          {notes.length} / {NOTES_MAX}
-                        </p>
-                      </div>
                     </div>
 
                     {submitError && (
-                      <div
-                        role="alert"
-                        className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400"
-                      >
-                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                        {submitError}
+                      <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {submitError}
                       </div>
                     )}
 
@@ -565,25 +477,19 @@ export default function BookingFormPage({ user, onLogout }) {
                         type="button"
                         onClick={() => navigate(-1)}
                         disabled={submitting}
-                        className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-60"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={submitting}
-                        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-70"
                       >
                         {submitting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                            Submitting
-                          </>
+                          <><Loader2 className="h-4 w-4 animate-spin" /> Submitting</>
                         ) : (
-                          <>
-                            <Send className="h-4 w-4" aria-hidden="true" />
-                            Submit Request
-                          </>
+                          <><Send className="h-4 w-4" /> Submit Request</>
                         )}
                       </button>
                     </div>
@@ -596,45 +502,47 @@ export default function BookingFormPage({ user, onLogout }) {
               )}
             </div>
 
-            {/* RIGHT: Sidebar with Map */}
+            {/* RIGHT: Map Sidebar */}
             <aside className="space-y-6 lg:col-span-2">
-              <section aria-labelledby="map-heading" className={`${cardClass} flex flex-col`}>
-                {/* Change Source Dropdown */}
+              <section className={`${cardClass} flex flex-col relative`}>
                 <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-700">
                   <span className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
-                    <MapPin className="h-3.5 w-3.5" />
-                    Starting from:
+                    <MapPin className="h-3.5 w-3.5" /> Starting from:
                   </span>
                   <select
                     value={currentSource}
                     onChange={(e) => setCurrentSource(e.target.value)}
-                    className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-800 focus:border-indigo-500 focus:outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
+                    className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-800 dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
                   >
-                    {allNodes.map(n => (
-                      <option key={n.nodeId} value={n.nodeId}>{n.nodeName}</option>
-                    ))}
+                    {allNodes.map(n => <option key={n.nodeId} value={n.nodeId}>{n.nodeName}</option>)}
                   </select>
                 </div>
                 
-                <h2 id="map-heading" className="sr-only">Campus Route</h2>
                 <div className="flex-1 min-h-[300px]">
                   <CampusMap 
                     userNodeId={currentSource}
                     selectedNodeId={resource?.roomNumber}
                     path={mapPath}
+                    onNodeClick={handleSourceNodeClick}
                     className="h-full"
                   />
                 </div>
+
+                {/* Dotted Expand Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsMapExpanded(true)}
+                  aria-label="Expand map"
+                  className="absolute bottom-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-lg border-2 border-dashed border-indigo-300 bg-white/90 text-indigo-600 shadow-md transition-all hover:scale-110 hover:border-indigo-500 hover:bg-indigo-50 dark:border-indigo-700 dark:bg-slate-800/90 dark:text-indigo-400 dark:hover:bg-slate-700"
+                >
+                  <Maximize className="h-4 w-4" />
+                </button>
               </section>
 
               {priority && (
-                <section aria-labelledby="priority-heading" className={cardClass}>
-                  <h2 id="priority-heading" className="mb-3 text-sm font-semibold">
-                    Priority
-                  </h2>
-                  <span
-                    className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${priority.className}`}
-                  >
+                <section className={cardClass}>
+                  <h2 className="mb-3 text-sm font-semibold">Priority</h2>
+                  <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${priority.className}`}>
                     {priority.label}
                   </span>
                   <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
@@ -646,6 +554,36 @@ export default function BookingFormPage({ user, onLogout }) {
           </div>
         )}
       </main>
+
+      {/* FULL-SCREEN MAP MODAL */}
+      {isMapExpanded && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-slate-900/80 backdrop-blur-md">
+          <div className="flex items-center justify-between px-6 py-4">
+            <div>
+              <p className="text-xs uppercase text-slate-300">Route Map</p>
+              <h2 className="text-xl font-bold text-white">
+                {resource?.resourceName || "Campus Route"}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsMapExpanded(false)}
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+            >
+              <Minimize className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 mx-6 mb-6 overflow-hidden rounded-xl bg-slate-900">
+            <CampusMap 
+              userNodeId={currentSource}
+              selectedNodeId={resource?.roomNumber}
+              path={mapPath}
+              onNodeClick={handleSourceNodeClick}
+              className="h-full w-full !border-none"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
