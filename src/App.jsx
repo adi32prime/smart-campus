@@ -11,6 +11,7 @@ import AdminReportsPage from './pages/AdminReportsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
 import SearchResourcesPage from './pages/SearchResourcesPage';
+import AdminMapPage from './pages/AdminMapPage';
 
 
 import useSSE from './hooks/useSSE';
@@ -134,6 +135,10 @@ const [isReady, setIsReady] = useState(false);
           element={RequireUser(<AdminDashboardPage user={user} onLogout={handleLogout} />, ['Admin'])}
         />
         <Route
+          path="/admin/map"
+          element={RequireUser(<AdminMapPage user={user} onLogout={handleLogout} />, ['Admin'])}
+        />
+        <Route
           path="/admin/reports"
           element={RequireUser(<AdminReportsPage user={user} onLogout={handleLogout} />, ['Admin'])}
         />
@@ -145,7 +150,6 @@ const [isReady, setIsReady] = useState(false);
           path="/admin/audit-logs"
           element={RequireUser(<AdminAuditLogsPage user={user} onLogout={handleLogout} />, ['Admin'])}
         />
-
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

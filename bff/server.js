@@ -13,6 +13,7 @@ import notificationsRouter from './routes/notifications.js';
 import { registerSseRoute } from './sse.js';
 import adminRouter from './routes/admin.js';
 import adminStatsRouter from './routes/admin-stats.js';
+import adminMapRouter from './routes/admin-map.js';
 import routeRouter from './routes/route.js';
 import routeAllRouter from './routes/route-all.js';
 dotenv.config();
@@ -43,7 +44,7 @@ app.use('/api/route-all', routeAllRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/admin', adminStatsRouter);
 app.use('/api/admin', adminRouter);
-
+app.use('/api/admin/map-status', adminMapRouter);
 registerSseRoute(app);
 
 // ---- Start server ----
