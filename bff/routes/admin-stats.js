@@ -54,16 +54,30 @@ router.get('/resources/status', requireAdmin, async (req, res) => {
 // GET /api/admin/reports?range=7d|30d|90d
 router.get('/reports', requireAdmin, async (req, res) => {
   const range = String(req.query.range || '30d').toLowerCase();
-  const days = range === '90d' ? 90 : range === '7d' ? 7 : 30;
+
+
 
   try {
-    // --- Date boundaries (capped at today for backward-looking stats) ---
-    const [[dateRow]] = await pool.query(
-      `SELECT DATE_SUB(CURDATE(), INTERVAL ? DAY) AS startDate, CURDATE() AS endDate`,
-      [days]
-    );
-    const startDate = dateRow.startDate;
-    const endDate = dateRow.endDate;
+    let days;
+    let startDate;
+    let endDate;
+
+    if (range === 'month') {
+      const [[row]] = await pool.query(
+        `SELECT DATE_FORMAT(CURDATE(), '%Y-%m-01') AS startDate, CURDATE() AS endDate`
+      );
+      startDate = row.startDate;
+      endDate = row.endDate;
+      days = Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / 86400000));
+    } else {
+      days = range === '90d' ? 90 : range === '7d' ? 7 : 30;
+      const [[row]] = await pool.query(
+        `SELECT DATE_SUB(CURDATE(), INTERVAL ? DAY) AS startDate, CURDATE() AS endDate`,
+        [days]
+      );
+      startDate = row.startDate;
+      endDate = row.endDate;
+    }
 
     // Previous period: same length window right before startDate
     const [[prevRow]] = await pool.query(

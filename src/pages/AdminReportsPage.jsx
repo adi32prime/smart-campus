@@ -11,8 +11,8 @@ const RANGES = [
   { value: "7d", label: "Last 7 days" },
   { value: "30d", label: "Last 30 days" },
   { value: "90d", label: "Last 90 days" },
+  { value: "month", label: "This month" },
 ];
-
 const STATUS_COLORS = {
   Confirmed: "#10b981",
   Cancelled: "#ef4444",
