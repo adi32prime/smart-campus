@@ -16,6 +16,7 @@ import adminStatsRouter from './routes/admin-stats.js';
 import adminMapRouter from './routes/admin-map.js';
 import routeRouter from './routes/route.js';
 import routeAllRouter from './routes/route-all.js';
+import adminRecentBookingsRouter from './routes/admin-recent-bookings.js';
 dotenv.config();
 
 const app = express();
@@ -45,6 +46,8 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/admin', adminStatsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/admin/map-status', adminMapRouter);
+app.use('/api/admin/recent-bookings', adminRecentBookingsRouter);
+
 registerSseRoute(app);
 
 // ---- Start server ----
