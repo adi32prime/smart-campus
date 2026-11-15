@@ -12,6 +12,7 @@ import AdminUsersPage from './pages/AdminUsersPage';
 import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
 import SearchResourcesPage from './pages/SearchResourcesPage';
 import AdminMapPage from './pages/AdminMapPage';
+import ErrorBoundary from './components/ErrorBoundary';
 
 
 import useSSE from './hooks/useSSE';
@@ -126,7 +127,12 @@ const [isReady, setIsReady] = useState(false);
         />
         <Route
           path="/dashboard/search"
-          element={RequireUser(<SearchResourcesPage user={user} onLogout={handleLogout} />, ['Student', 'Faculty'])}
+          element={RequireUser(
+            <ErrorBoundary>
+              <SearchResourcesPage user={user} onLogout={handleLogout} />
+            </ErrorBoundary>,
+            ['Student', 'Faculty']
+          )}
         />
 
         {/* Admin routes */}
