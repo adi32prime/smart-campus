@@ -15,7 +15,7 @@ Smart Campus Lab & Resource Optimizer is a web system that lets students and fac
 | **HoD** | Dr. S. S. Patil |
 | **Academic Year** | 2026 – 2027 |
 | **Methodology** | Hybrid SDLC — Agile, Engine-Based, Evidence-Driven (MiniLeap) |
-| **Repository** | https://github.com/aditygk19-debug/smart-campus |
+| **Repository** | https://github.com/adi32prime/smart-campus |
 
 ## Table of Contents
 
@@ -198,9 +198,18 @@ smart-campus/
 |   |   |-- react.svg
 |   |   `-- vite.svg
 |   |-- components/
-|   |   `-- NotificationBell.jsx   live notification bell and badge
+|   |   |-- NotificationBell.jsx   live notification bell and badge
+|   |   |-- AdminHeader.jsx        admin navigation header (Dashboard, Map, Users, Audit Logs, Reports)
+|   |   |-- CampusMap.jsx          SVG campus map with animated path, ranked nodes, zoom/pan on mobile
+|   |   |-- ErrorBoundary.jsx      catches page crashes so the whole app doesn't die
+|   |   |-- NavIcons.jsx           reusable Map + Bookings icon buttons for headers
+|   |   |-- ThemeToggle.jsx        dark/light mode toggle
+|   |   `-- ToastNotification.jsx  floating booking-promotion toast
+|   |-- data/
+|   |   `-- campusGraph.js         31 nodes (with x/y coordinates) and 60 edges with distances
 |   |-- hooks/
-|   |   `-- useSSE.js              SSE subscription hook with auto-reconnect
+|   |   |-- useSSE.js              SSE subscription hook with auto-reconnect
+|   |   `-- useTheme.js            theme state + localStorage persistence
 |   `-- pages/
 |       |-- LoginPage.jsx
 |       |-- DashboardPage.jsx
@@ -209,8 +218,8 @@ smart-campus/
 |       |-- BookingFormPage.jsx
 |       |-- BookingStatusPage.jsx
 |       |-- SearchResourcesPage.jsx
-|       |-- SearchResultsPage.jsx
 |       |-- AdminDashboardPage.jsx
+|       |-- AdminMapPage.jsx       admin live campus map with date/time picker and occupied-node popups
 |       |-- AdminUsersPage.jsx
 |       |-- AdminReportsPage.jsx
 |       `-- AdminAuditLogsPage.jsx
@@ -293,6 +302,8 @@ smart-campus/
     |-- smartcampus_dump.sql       schema, procedures and seed data
     `-- phase1_migration.sql       idempotent migration
 ```
+
+> **Note:** `SearchResultsPage.jsx` was removed from `src/pages/`; its function is merged into `SearchResourcesPage.jsx` (see Section 9.3).
 
 ### 5.5 Shared Interface Contract
 
@@ -1458,18 +1469,18 @@ Team D owns everything the user touches and everything that connects the engines
 
 | Group | Route | Purpose |
 |---|---|---|
-| Public | `/login` | Role, user ID and password form; stores the JWT on success |
-| Student / Faculty | `/dashboard` | Department overview with resource counts and quick actions |
-| Student / Faculty | `/dashboard/department/:deptId` | Resource categories (Lab, Classroom, Conference Hall) per department |
-| Student / Faculty | `/dashboard/department/:deptId/:typeId` | Resources of a given type with date and slot picker |
-| Student / Faculty | `/dashboard/book/:resourceId` | Booking form: reason, notes, priority preview |
-| Student / Faculty | `/dashboard/bookings` | The user's bookings with status tabs; supports `?status=` and `?id=` highlighting |
-| Student / Faculty | `/dashboard/search` | Search form: date, slot, type, capacity, source node |
-| Student / Faculty | `/dashboard/search-results` | Distance-sorted results with path per resource |
-| Admin | `/admin` | Totals for departments, resources, users and bookings; live resource status; recent bookings |
-| Admin | `/admin/users` | List, add, edit, delete users; reset password |
-| Admin | `/admin/reports` | 7 / 30 / 90 day booking analytics, CSV export, print view |
-| Admin | `/admin/audit-logs` | Recent audit entries colour-coded by action |
+| Public | `/login` | Role, user ID, password; dark-mode toggle in the corner |
+| Student / Faculty | `/dashboard` | Department grid, profile card, Map and Bookings icons in the header |
+| Student / Faculty | `/dashboard/department/:deptId` | Resource categories per department |
+| Student / Faculty | `/dashboard/department/:deptId/:typeId` | Resources with date + slot picker |
+| Student / Faculty | `/dashboard/book/:resourceId` | Booking form with **map sidebar** (no notes field), "Starting from" dropdown, expand-to-fullscreen map |
+| Student / Faculty | `/dashboard/bookings` | Tabs: **All / Confirmed / Waitlisted / Cancelled**; past Confirmed → "Used" (teal), past Waitlisted → "Expired" (orange) |
+| Student / Faculty | `/dashboard/search` | **Unified page**: collapsible filter sidebar + full-screen interactive map |
+| Admin | `/admin` | Stats, live resource status with **date/time picker**, expandable resource rows, Recent Bookings with inline "View all" |
+| Admin | `/admin/map` | **Live campus map**: pick date + slot, click occupied nodes to see who booked |
+| Admin | `/admin/users` | User CRUD |
+| Admin | `/admin/reports` | **4 KPIs**: Total Bookings, Slot Utilization %, Pending Actions, Cancellation Rate; Stacked Trend; Status Donut; Top 5 Resources; Department Utilization |
+| Admin | `/admin/audit-logs` | Audit log entries |
 
 **Shared components**
 
@@ -1570,6 +1581,10 @@ Team D owns everything the user touches and everything that connects the engines
 7. The BFF pushes an `event: notification` with the new rows.
 8. `NotificationBell` prepends the item and increases the badge (KPI K4.1, under 5 seconds).
 
+> **Clickable notifications:** `NotificationBell` items are clickable. Clicking a notification navigates to `/dashboard/bookings?id=<bookingId>`, which the bookings page reads to **highlight** that row (indigo ring).
+>
+> **Toast notifications:** the app-level `ToastNotification` component also subscribes to SSE and shows a floating card (bottom-right) when a booking is promoted. It shows the resource, date, time, and a "View in My Bookings" link.
+
 **Why server-side polling.** The database is the source of truth for notifications, and the writers (stored procedures and Team A) are separate processes. Polling the table from the BFF requires no changes to those writers and no message broker, and a 3-second interval meets the 5-second target while the query stays an indexed lookup per connected user.
 
 > **Note:** Reverse proxies can hold back SSE data. The BFF sets `X-Accel-Buffering: no` on the stream, and any Nginx in front must use `proxy_buffering off` (Section 16.4), otherwise notifications arrive late or in bursts.
@@ -1585,6 +1600,9 @@ Team D owns everything the user touches and everything that connects the engines
 | Error states | Inline, readable messages such as "Couldn't load departments", with the BFF `message` shown for rejected bookings |
 | Loading states | Visible loading indicators while requests are pending; buttons disabled during submit |
 | Forms | Each input has an associated `label`; required fields are marked and validated before submit |
+| Dark mode | Global theme via `useTheme` hook + `<html class="dark">`; Tailwind `dark:` variants on every component; preference persisted in `localStorage` |
+| Map interactions | Pinch-zoom and pan on mobile; locked static view on desktop; clickable nodes only when it makes sense (available on Search, source-eligible on Booking Form) |
+| Live feedback | SSE-driven bell badge, toast notifications, inline loading spinners, disabled submit buttons during requests |
 
 ### 9.8 Class/Component Reference
 
@@ -1602,8 +1620,16 @@ Team D owns everything the user touches and everything that connects the engines
 | Name | File | Role |
 |---|---|---|
 | `NotificationBell` | `src/components/NotificationBell.jsx` | Unread badge, notification list, "mark all read" |
-| `useSSE` | `src/hooks/useSSE.js` | SSE subscription with auto-reconnect every 3 seconds |
-| Page components | `src/pages/*.jsx` | Login, Dashboard, Department, ResourceList, BookingForm, BookingStatus, SearchResources, SearchResults, AdminDashboard, AdminUsers, AdminReports, AdminAuditLogs |
+| `AdminHeader` | `src/components/AdminHeader.jsx` | Admin nav: Dashboard, Map, Users, Audit Logs, Reports |
+| `CampusMap` | `src/components/CampusMap.jsx` | Reusable SVG campus map with animated route, ranked nodes, mobile zoom/pan |
+| `ErrorBoundary` | `src/components/ErrorBoundary.jsx` | Prevents a single page crash from killing the whole app |
+| `NavIcons` | `src/components/NavIcons.jsx` | Map + Bookings icon buttons in every student/faculty header |
+| `ThemeToggle` | `src/components/ThemeToggle.jsx` | Light/dark toggle |
+| `ToastNotification` | `src/components/ToastNotification.jsx` | SSE-driven floating toast on booking promotion |
+| `useSSE` | `src/hooks/useSSE.js` | SSE subscription with auto-reconnect |
+| `useTheme` | `src/hooks/useTheme.js` | Theme state and persistence |
+| `campusGraph` | `src/data/campusGraph.js` | 31 nodes (x/y coords) + 60 edges (distances) |
+| Page components | `src/pages/*.jsx` | Login, Dashboard, Department, ResourceList, BookingForm, BookingStatus, SearchResources, AdminDashboard, AdminMap, AdminUsers, AdminReports, AdminAuditLogs |
 
 **BFF files**
 
@@ -1624,6 +1650,9 @@ Team D owns everything the user touches and everything that connects the engines
 | `bff/routes/resources.js` | Resource list with availability annotation; single resource |
 | `bff/routes/campus-nodes.js` | Campus node list with static fallback |
 | `bff/routes/notifications.js` | List, unread count, mark read |
+| `bff/routes/route.js` | Proxies Team B `/route` for single-path queries |
+| `bff/routes/admin-map.js` | Occupancy of every room for a slot (Admin Map) |
+| `bff/routes/admin-recent-bookings.js` | All bookings for Admin Dashboard "View all" |
 
 ### 9.9 Testing Evidence
 
@@ -1672,7 +1701,7 @@ Team D owns everything the user touches and everything that connects the engines
 
 ## 10. End-to-End Workflows
 
-This section walks through the four critical flows that exercise all four engines together. Each flow is written as a sequence with numbered steps, showing exactly which engine does what at each step. This is the section a reviewer reads to understand how the four engines cooperate.
+This section walks through the five critical flows that exercise the engines together. Each flow is written as a sequence with numbered steps, showing exactly which engine does what at each step. This is the section a reviewer reads to understand how the engines cooperate.
 
 ---
 
@@ -1974,7 +2003,15 @@ This section walks through the four critical flows that exercise all four engine
 
 ---
 
-### 10.5 Cross-Engine Interaction Summary
+### 10.5 Workflow 5 — Live Campus Map (Search and Admin)
+
+- **Search page**: filters + full-screen SVG map. User picks source node (amber), map renders all rooms color-coded (green = available, red = occupied, gray = neutral). Clicking a green room draws the animated path from source → room and shows the Book Now pill.
+- **Admin page** (`/admin/map`): picks a date + slot. Map renders all rooms with green/red. Clicking a red room shows a popup: "Booked by" (future) or "Used by" (past) + user ID + role + booking ID + "View in Reports" link.
+- **Booking Form**: map in sidebar, colored green for destination + amber for source, other nodes neutral. Clicking a source-eligible node (gate, office, library, department) updates the source and redraws the path. Dotted expand button opens full-screen modal.
+
+---
+
+### 10.6 Cross-Engine Interaction Summary
 
 | Flow | Team A | Team B | Team C | Team D |
 |---|---|---|---|---|
@@ -2506,6 +2543,41 @@ data: [{"NotificationId":2,"BookingId":32,"Message":"Good news! Your waitlisted 
 
 The client reconnects on error after 3 seconds.
 
+#### 12.1.12 Route and Admin Map Routes
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/route` | Proxy to Team B `/route` for a single path (used by Booking Form) |
+| GET | `/api/admin/map-status?date=&startTime=&endTime=` | Occupancy of every room for a slot (used by Admin Map) |
+| GET | `/api/admin/recent-bookings?limit=100` | All bookings, most recent first (used by Admin Dashboard "View all") |
+
+**`POST /api/route`** — request:
+
+```json
+{ "sourceNodeId": "N1", "destNodeId": "L1" }
+```
+
+Response: same shape as Team B `/route` (Section 12.3.2).
+
+**`GET /api/admin/map-status`** — response:
+
+```json
+{
+  "slotId": 2,
+  "date": "2026-11-20",
+  "startTime": "10:00",
+  "endTime": "11:00",
+  "statuses": {
+    "L1": "available",
+    "L2": "available",
+    "L4": "occupied",
+    "C1": "available"
+  }
+}
+```
+
+**`GET /api/admin/recent-bookings`** — response: array of booking objects (same shape as `GET /api/bookings`, Section 12.1.7).
+
 ---
 
 ### 12.2 Team A API (`http://localhost:8090`)
@@ -2933,6 +3005,7 @@ For a full procedure timing loop, wrap `CALL CREATE_BOOKING_TRANSACTION(...)` in
 | Frontend styling | Tailwind CSS | 3.4 | Utility-first, no CSS-in-JS runtime, small bundle |
 | Frontend routing | React Router | 7.18 | Standard SPA router, role-based guards |
 | Frontend icons | lucide-react | 1.52 | Tree-shakeable SVG icons, consistent style |
+| Frontend map interaction | `react-zoom-pan-pinch` | latest | Pinch-zoom and pan for the campus map on mobile |
 | BFF runtime | Node.js | 20 LTS | Same language as the build toolchain, async I/O for many small reads |
 | BFF framework | Express | 5.2 | Minimal, well-understood, middleware model |
 | BFF DB driver | mysql2 | 3.24 | Promise API, prepared statements |
@@ -2975,6 +3048,13 @@ For a full procedure timing loop, wrap `CALL CREATE_BOOKING_TRANSACTION(...)` in
 | Bash (Linux / Ubuntu) | Running services on the college server |
 | Chrome DevTools | Frontend debugging, network inspection |
 
+### 15.4 Removed / Deprecated
+
+| Item | Status |
+|---|---|
+| `SearchResultsPage.jsx` | Merged into `SearchResourcesPage.jsx` |
+| `Additional Notes` field | Removed from the booking form |
+
 ---
 
 ## 16. Local Setup
@@ -3004,7 +3084,7 @@ git --version       # should print "git version 2.x"
 **Step 1 — Clone the repository**
 
 ```powershell
-git clone https://github.com/aditygk19-debug/smart-campus.git
+git clone https://github.com/adi32prime/smart-campus.git
 cd smart-campus
 ```
 
@@ -3146,7 +3226,7 @@ mysql --version
 **Step 2 — Clone the repository**
 
 ```bash
-git clone https://github.com/aditygk19-debug/smart-campus.git
+git clone https://github.com/adi32prime/smart-campus.git
 cd smart-campus
 ```
 
@@ -3256,6 +3336,14 @@ sudo mysql -u root -p < db/phase1_migration.sql
 This is the cleaner long-term fix. In the BFF, replace `FROM USERS` with `FROM users`, `INTO BOOKINGS` with `INTO bookings`, etc., in every route file and in `sse.js`. Similarly, in Team A's `Db.java` and Team B's `Db.java`, lowercase every table name.
 
 Discuss with your mentor which approach fits the college server policy.
+
+**Other known Linux / deployment issues**
+
+> **Frontend relative API paths** — the built frontend contains `/api/...` paths with no host. A reverse proxy (Nginx) is required to forward `/api/*` to the BFF on port 8080 and to disable `proxy_buffering` for `/api/stream`.
+>
+> **Case-sensitive table names** — BFF and Team A/B queries still use UPPERCASE (`USERS`, `BOOKINGS`). On Linux MySQL set `lower_case_table_names=1` before loading the dump, or rewrite all SQL to lowercase.
+>
+> **Map `campusGraph.js` is the source of truth for coordinates** — the campus map layout is defined in `src/data/campusGraph.js`. Team B's graph is hardcoded in `TeamBHttpServer.java`. If either changes, the visual map and the routing distances can drift apart.
 
 ### 16.4 Production Build Notes
 
@@ -3369,6 +3457,26 @@ Every MiniLeap project must produce eight evidence items. All eight are present 
 | Gate 5 (Improvement) | Per engine | ✅ Complete |
 | System Gate 5 (System hardening) | Whole system | ✅ Complete |
 | Final Review | Whole system | ⏳ In progress (Review V) |
+
+### 18.3 Feature Completeness
+
+The following completed features are demonstrated at the review.
+
+- **Dark mode** across all pages with persistence
+- **SSE live notifications** with clickable navigation to booking
+- **Toast notification** on waitlist promotion
+- **Unified search page** with collapsible filter sidebar and full-screen map
+- **Interactive campus map** with zoom/pan on mobile, static on desktop
+- **Admin live map** (`/admin/map`) with date/time picker and occupied-node popups
+- **Admin dashboard** with time-aware resource status and inline booking expansion
+- **Admin reports** with 4 KPIs, stacked trend, status donut, top 5 resources
+- **Booking form** with source dropdown, expandable map, and simplified (no notes) form
+- **Colored badges** — Used (teal), Expired (orange), Confirmed, Waitlisted, Cancelled
+- **Refresh-safe routing** — page reload keeps you on the current page
+
+### 18.4 Deferred for Later
+
+> **Deferred for later:** Full deployment to a public URL is deferred. The plan is to host MySQL on the college Ubuntu server and run Team A, Team B, BFF, and frontend on the same server behind a reverse proxy. The case-sensitivity and `$PORT` issues noted in Section 16.3 must be resolved before that deployment.
 
 ---
 
