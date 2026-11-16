@@ -186,7 +186,7 @@ export default function BookingFormPage({ user, onLogout }) {
 
   // Fetch locations dropdown
   useEffect(() => {
-    fetch("/api/campus-nodes")
+    fetch(import.meta.env.VITE_API_BASE_URL + /api/campus-nodes")
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -207,7 +207,7 @@ export default function BookingFormPage({ user, onLogout }) {
 
     async function fetchRoute() {
       try {
-        const res = await fetch("/api/route", {
+        const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/route", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sourceNodeId: currentSource, destNodeId: dest }),
@@ -253,7 +253,7 @@ export default function BookingFormPage({ user, onLogout }) {
     const reason = REASONS.find((r) => r.id === reasonId);
     setSubmitting(true);
     try {
-      const res = await fetch("/api/bookings", {
+      const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

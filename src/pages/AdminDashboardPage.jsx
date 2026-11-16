@@ -185,7 +185,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
     if (allBookings.length > 0) return; // already fetched
     setLoadingAll(true);
     try {
-      const res = await fetch("/api/admin/recent-bookings?limit=200", {
+      const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/admin/recent-bookings?limit=200", {
         headers: { "X-Role": "Admin" },
       });
       if (res.ok) {

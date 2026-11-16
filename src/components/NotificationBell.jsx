@@ -64,7 +64,7 @@ export default function NotificationBell({ userId }) {
 
   async function markAllRead() {
     try {
-      await fetch('/api/notifications/read-all', {
+      await fetch(import.meta.env.VITE_API_BASE_URL + '/api/notifications/read-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),

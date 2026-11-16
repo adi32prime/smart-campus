@@ -28,7 +28,7 @@ export default function DashboardPage({ user, onLogout }) {
     setLoading(true);
     setError(false);
     try {
-      const res = await fetch("/api/departments", { signal });
+      const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/departments", { signal });
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
       const data = await res.json();
       setDepartments(Array.isArray(data) ? data : []);

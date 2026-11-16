@@ -143,7 +143,7 @@ export default function SearchResourcesPage({ user, onLogout }) {
   }, [date, timeSlots.length, slotIdx]);
 
   useEffect(() => {
-    fetch("/api/campus-nodes")
+    fetch(import.meta.env.VITE_API_BASE_URL + /api/campus-nodes")
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -173,7 +173,7 @@ export default function SearchResourcesPage({ user, onLogout }) {
       setError("");
 
       try {
-        const res = await fetch("/api/search", {
+        const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/search", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

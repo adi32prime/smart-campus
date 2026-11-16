@@ -39,7 +39,7 @@ export default function AdminUsersPage({ user, onLogout }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/users", { headers: authHeaders(), signal });
+      const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/admin/users", { headers: authHeaders(), signal });
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
       const data = await res.json();
       setUsers(Array.isArray(data) ? data : []);
@@ -86,7 +86,7 @@ export default function AdminUsersPage({ user, onLogout }) {
     try {
       if (modal.mode === "add") {
         if (!form.userId || !form.password || !form.role) throw new Error("All fields are required.");
-        const res = await fetch("/api/admin/users", {
+        const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/admin/users", {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify({ userId: Number(form.userId), password: form.password, role: form.role }),

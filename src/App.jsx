@@ -45,7 +45,7 @@ export default function App() {
   }, []);
 
   async function handleLogin({ role, userId, password }) {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(import.meta.env.VITE_API_BASE_URL + '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

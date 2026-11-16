@@ -51,7 +51,7 @@ export default function AdminAuditLogsPage({ user, onLogout }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/audit-logs?limit=100", {
+      const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/admin/audit-logs?limit=100", {
         headers: { "X-Role": "Admin" },
         signal,
       });
