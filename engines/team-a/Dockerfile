@@ -11,4 +11,4 @@ COPY --from=build /app/*.class ./
 COPY --from=build /app/lib ./lib
 
 EXPOSE 8091
-CMD ["java", "-cp", ".:lib/*", "TeamBHttpServer"]
+CMD ["java", "-cp", ".:lib/*", "TeamAHttpServer"]
