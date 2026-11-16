@@ -1,9 +1,15 @@
 import mysql from 'mysql2/promise';
+import fs from 'fs';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create a connection pool (reused across all requests)
+const sslConfig = process.env.DB_SSL_CA 
+  ? { ca: process.env.DB_SSL_CA, rejectUnauthorized: true }
+  : (fs.existsSync('./ca.pem') 
+      ? { ca: fs.readFileSync('./ca.pem'), rejectUnauthorized: true } 
+      : undefined);
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT) || 3306,
@@ -13,14 +19,14 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  dateStrings: true, // return DATE/TIME columns as strings (avoids timezone shifts)
+  dateStrings: true,
+  ssl: sslConfig,
 });
 
-// Quick connectivity test
 export async function testConnection() {
   try {
     const conn = await pool.getConnection();
-    console.log('✅ MySQL connected to', process.env.DB_NAME);
+    console.log('✅ MySQL connected to Aiven:', process.env.DB_HOST);
     conn.release();
     return true;
   } catch (err) {
