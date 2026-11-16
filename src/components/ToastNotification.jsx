@@ -12,7 +12,8 @@ export default function ToastNotification({ notification, onClose, user }) {
       setIsVisible(true);
       
       if (user?.userId) {
-        fetch(`/api/notifications/unread-count?userId=${user.userId}`)
+fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notifications/unread-count?userId=${user.userId}`)
+
           .then((res) => res.json())
           .then((data) => {
             if (data.count !== undefined) {
@@ -21,7 +22,8 @@ export default function ToastNotification({ notification, onClose, user }) {
           })
           .catch(console.error);
 
-        fetch(`/api/bookings?userId=${user.userId}`)
+fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings?userId=${user.userId}`)
+
           .then((res) => res.json())
           .then((data) => {
             if (Array.isArray(data) && data.length > 0) {

@@ -131,7 +131,8 @@ export default function BookingStatusPage({ user, onLogout }) {
       setError(false);
       try {
         const params = new URLSearchParams({ userId: String(userId ?? "") });
-        const res = await fetch(`/api/bookings?${params.toString()}`, {
+const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings?${params.toString()}`, {
+
           signal: controller.signal,
         });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
@@ -165,7 +166,8 @@ export default function BookingStatusPage({ user, onLogout }) {
     setCancelError("");
     setCancellingId(booking.bookingId);
     try {
-      const res = await fetch(`/api/bookings/${encodeURIComponent(booking.bookingId)}/cancel`, {
+const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings/${encodeURIComponent(booking.bookingId)}/cancel`, {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),

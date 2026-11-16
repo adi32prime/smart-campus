@@ -157,7 +157,6 @@ export default function AdminDashboardPage({ user, onLogout }) {
 
     const adminHeaders = { "X-Role": "Admin" };
     const mapParams = new URLSearchParams({ date, startTime: slot.start, endTime: slot.end });
-
     const [s, r, b] = await Promise.all([
       request("/api/admin/stats", signal, isObject, adminHeaders),
       request(`/api/admin/map-status?${mapParams.toString()}`, signal, isObject, adminHeaders),
@@ -185,7 +184,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
     if (allBookings.length > 0) return; // already fetched
     setLoadingAll(true);
     try {
-      const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/admin/recent-bookings?limit=200", {
+      const res = await fetch(import.meta.env.VITE_API_BASE_URL + '/api/admin/recent-bookings?limit=200', {
         headers: { "X-Role": "Admin" },
       });
       if (res.ok) {

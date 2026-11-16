@@ -146,7 +146,7 @@ export default function ResourceListPage({ user, onLogout }) {
           startTime,
           endTime,
         });
-        const res = await fetch(`/api/resources?${params.toString()}`, {
+const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/resources?${params.toString()}`, {
           signal: controller.signal,
         });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);

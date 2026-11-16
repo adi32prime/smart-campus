@@ -19,7 +19,7 @@ export default function useSSE(userId) {
 
     function connect() {
       if (cancelled) return;
-      const es = new EventSource(`/api/stream?userId=${encodeURIComponent(userId)}`);
+const es = new EventSource(`${import.meta.env.VITE_API_BASE_URL}/api/stream?userId=${encodeURIComponent(userId)}`);
       esRef.current = es;
 
       es.addEventListener('hello', () => {

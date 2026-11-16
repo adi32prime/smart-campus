@@ -159,7 +159,8 @@ export default function BookingFormPage({ user, onLogout }) {
       setLoading(true);
       setLoadError(false);
       try {
-        const res = await fetch(`/api/resources/${encodeURIComponent(resourceId)}`, {
+const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/resources/${encodeURIComponent(resourceId)}`, {
+
           signal: controller.signal,
         });
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
@@ -186,7 +187,8 @@ export default function BookingFormPage({ user, onLogout }) {
 
   // Fetch locations dropdown
   useEffect(() => {
-    fetch(import.meta.env.VITE_API_BASE_URL + /api/campus-nodes")
+fetch(import.meta.env.VITE_API_BASE_URL + '/api/campus-nodes')
+
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -207,7 +209,8 @@ export default function BookingFormPage({ user, onLogout }) {
 
     async function fetchRoute() {
       try {
-        const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/route", {
+const res = await fetch(import.meta.env.VITE_API_BASE_URL + '/api/route', {
+
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sourceNodeId: currentSource, destNodeId: dest }),
@@ -253,7 +256,8 @@ export default function BookingFormPage({ user, onLogout }) {
     const reason = REASONS.find((r) => r.id === reasonId);
     setSubmitting(true);
     try {
-      const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/bookings", {
+const res = await fetch(import.meta.env.VITE_API_BASE_URL + '/api/bookings', {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

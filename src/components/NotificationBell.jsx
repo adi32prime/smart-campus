@@ -22,9 +22,9 @@ export default function NotificationBell({ userId }) {
       try {
         // Fetch notifications AND the user's bookings simultaneously
         const [listRes, countRes, bookingsRes] = await Promise.all([
-          fetch(`/api/notifications?userId=${userId}`),
-          fetch(`/api/notifications/unread-count?userId=${userId}`),
-          fetch(`/api/bookings?userId=${userId}`)
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notifications?userId=${userId}`),
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notifications/unread-count?userId=${userId}`),
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings?userId=${userId}`)
         ]);
         
         if (cancelled) return;

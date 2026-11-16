@@ -39,7 +39,7 @@ export default function AdminUsersPage({ user, onLogout }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/admin/users", { headers: authHeaders(), signal });
+const res = await fetch(import.meta.env.VITE_API_BASE_URL + '/api/admin/users', { headers: authHeaders(), signal });
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
       const data = await res.json();
       setUsers(Array.isArray(data) ? data : []);
@@ -86,7 +86,7 @@ export default function AdminUsersPage({ user, onLogout }) {
     try {
       if (modal.mode === "add") {
         if (!form.userId || !form.password || !form.role) throw new Error("All fields are required.");
-        const res = await fetch(import.meta.env.VITE_API_BASE_URL + /api/admin/users", {
+const res = await fetch(import.meta.env.VITE_API_BASE_URL + '/api/admin/users', {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify({ userId: Number(form.userId), password: form.password, role: form.role }),
@@ -94,7 +94,7 @@ export default function AdminUsersPage({ user, onLogout }) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Failed to add user");
       } else if (modal.mode === "edit") {
-        const res = await fetch(`/api/admin/users/${modal.user.userId}`, {
+const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/users/${modal.user.userId}`, {
           method: "PUT",
           headers: authHeaders(),
           body: JSON.stringify({ role: form.role, status: form.status }),
@@ -103,7 +103,7 @@ export default function AdminUsersPage({ user, onLogout }) {
         if (!res.ok) throw new Error(data.message || "Failed to update user");
       } else if (modal.mode === "reset") {
         if (!form.password) throw new Error("Enter a new password.");
-        const res = await fetch(`/api/admin/users/${modal.user.userId}/reset-password`, {
+const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/users/${modal.user.userId}/reset-password`, {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify({ newPassword: form.password }),
@@ -123,7 +123,7 @@ export default function AdminUsersPage({ user, onLogout }) {
   async function handleDelete(u) {
     if (!window.confirm(`Delete user ${u.userId}? This cannot be undone.`)) return;
     try {
-      const res = await fetch(`/api/admin/users/${u.userId}`, {
+const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/users/${u.userId}`, {
         method: "DELETE",
         headers: authHeaders(),
       });

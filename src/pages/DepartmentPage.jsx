@@ -87,10 +87,10 @@ export default function DepartmentPage({ user, onLogout }) {
       setLoading(true);
       setError(false);
       try {
-        const res = await fetch(
-          `/api/departments/${encodeURIComponent(deptId)}/resource-types`,
-          { signal }
-        );
+       const res = await fetch(
+  `${import.meta.env.VITE_API_BASE_URL}/api/departments/${encodeURIComponent(deptId)}/resource-types`,
+  { signal }
+);
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const data = await res.json();
         setTypes(Array.isArray(data) ? data : []);
