@@ -24,9 +24,9 @@ export async function getResourceNodeMap() {
       l.RoomNumber   AS roomNumber,
       n.NodeId       AS nodeId,
       n.NodeName     AS nodeName
-    FROM RESOURCES r
-    JOIN LOCATION l ON l.LocationId = r.LocationId
-    LEFT JOIN CAMPUS_NODE n ON n.NodeId = l.RoomNumber
+    FROM resources r
+    JOIN location l ON l.LocationId = r.LocationId
+    LEFT JOIN campus_node n ON n.NodeId = l.RoomNumber
     ORDER BY r.ResourceId
   `);
 
