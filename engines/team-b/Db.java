@@ -42,6 +42,7 @@ public class Db {
         }
         return DriverManager.getConnection(URL, USER, PASS);
     }
+
     public static boolean testConnection() {
         try (Connection c = get()) {
             return c != null && !c.isClosed();
@@ -57,7 +58,7 @@ public class Db {
     public static int findSlotId(String startTime, String endTime) throws SQLException {
         String s = normalizeTime(startTime);
         String e = normalizeTime(endTime);
-String sql = "SELECT SlotId FROM time_slot WHERE StartTime = ? AND EndTime = ? LIMIT 1";
+        String sql = "SELECT SlotId FROM time_slot WHERE StartTime = ? AND EndTime = ? LIMIT 1";
         try (Connection c = get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, s);

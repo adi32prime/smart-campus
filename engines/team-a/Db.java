@@ -11,7 +11,7 @@ public class Db {
     private static final String URL =
         System.getenv().getOrDefault(
             "DB_URL",
-            "jdbc:mysql://smart-campus-db-aditygk19-b965.h.aivencloud.com:10242/defaultdb?useSSL=true&requireSSL=true&serverTimezone=UTC");
+            "jdbc:mysql://smart-campus-db-aditygk19-b965.h.aivencloud.com:10242/smartcampus?useSSL=true&requireSSL=true&serverTimezone=UTC");
 
     private static final String USER =
         System.getenv().getOrDefault("DB_USER", "avnadmin");
@@ -56,7 +56,7 @@ public class Db {
     public static int findSlotId(String startTime, String endTime) throws SQLException {
         String s = normalizeTime(startTime);
         String e = normalizeTime(endTime);
-        String sql = "SELECT SlotId FROM TIME_SLOT WHERE StartTime = ? AND EndTime = ? LIMIT 1";
+        String sql = "SELECT SlotId FROM time_slot WHERE StartTime = ? AND EndTime = ? LIMIT 1";
         try (Connection c = get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, s);
@@ -72,8 +72,8 @@ public class Db {
     // Finds ResourceId from a campus node id like "L1"
     // ------------------------------------------------------------
     public static int findResourceIdByNode(String nodeId) throws SQLException {
-        String sql = "SELECT r.ResourceId FROM RESOURCES r " +
-                     "JOIN LOCATION l ON l.LocationId = r.LocationId " +
+        String sql = "SELECT r.ResourceId FROM resources r " +
+                     "JOIN location l ON l.LocationId = r.LocationId " +
                      "WHERE l.RoomNumber = ? LIMIT 1";
         try (Connection c = get();
              PreparedStatement ps = c.prepareStatement(sql)) {
@@ -89,7 +89,7 @@ public class Db {
     // Count confirmed bookings for a resource+slot+date
     // ------------------------------------------------------------
     public static int countConfirmed(int resourceId, int slotId, String date) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM BOOKINGS " +
+        String sql = "SELECT COUNT(*) FROM bookings " +
                      "WHERE ResourceId = ? AND SlotId = ? AND BookingDate = ? " +
                      "AND Status IN ('Pending','Confirmed')";
         try (Connection c = get();
@@ -108,7 +108,7 @@ public class Db {
     // Check if user already has an active booking for resource+slot+date
     // ------------------------------------------------------------
     public static boolean userHasActiveBooking(int userId, int resourceId, int slotId, String date) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM BOOKINGS " +
+        String sql = "SELECT COUNT(*) FROM bookings " +
                      "WHERE UserId = ? AND ResourceId = ? AND SlotId = ? AND BookingDate = ? " +
                      "AND Status IN ('Pending','Confirmed','Waitlisted')";
         try (Connection c = get();
@@ -131,7 +131,7 @@ public class Db {
     public static int insertBooking(int userId, int resourceId, int slotId,
                                     String date, String purpose,
                                     String status, int priority) throws SQLException {
-        String sql = "INSERT INTO BOOKINGS " +
+        String sql = "INSERT INTO bookings " +
                      "(UserId, ResourceId, SlotId, BookingDate, Purpose, Status, Priority) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection c = get();
@@ -156,7 +156,7 @@ public class Db {
     // ------------------------------------------------------------
     public static int computeWaitlistPosition(int resourceId, int slotId, String date,
                                               int priority, int myBookingId) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM BOOKINGS " +
+        String sql = "SELECT COUNT(*) FROM bookings " +
                      "WHERE ResourceId = ? AND SlotId = ? AND BookingDate = ? " +
                      "AND Status = 'Waitlisted' " +
                      "AND (Priority < ? OR (Priority = ? AND BookingId < ?))";
@@ -178,7 +178,7 @@ public class Db {
     public static void updateWaitlistPosition(int bookingId, int position) throws SQLException {
         try (Connection c = get();
              PreparedStatement ps = c.prepareStatement(
-                 "UPDATE BOOKINGS SET WaitlistPosition = ? WHERE BookingId = ?")) {
+                 "UPDATE bookings SET WaitlistPosition = ? WHERE BookingId = ?")) {
             ps.setInt(1, position);
             ps.setInt(2, bookingId);
             ps.executeUpdate();
@@ -190,7 +190,7 @@ public class Db {
     // Returns BookingId or -1
     // ------------------------------------------------------------
     public static int pickNextWaiter(int resourceId, int slotId, String date) throws SQLException {
-        String sql = "SELECT BookingId FROM BOOKINGS " +
+        String sql = "SELECT BookingId FROM bookings " +
                      "WHERE ResourceId = ? AND SlotId = ? AND BookingDate = ? " +
                      "AND Status = 'Waitlisted' " +
                      "ORDER BY Priority ASC, BookingId ASC LIMIT 1";
@@ -209,7 +209,7 @@ public class Db {
     public static int getBookingUserId(int bookingId) throws SQLException {
         try (Connection c = get();
              PreparedStatement ps = c.prepareStatement(
-                 "SELECT UserId FROM BOOKINGS WHERE BookingId = ?")) {
+                 "SELECT UserId FROM bookings WHERE BookingId = ?")) {
             ps.setInt(1, bookingId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt("UserId");
@@ -221,14 +221,14 @@ public class Db {
     public static void promoteBooking(int bookingId) throws SQLException {
         try (Connection c = get();
              PreparedStatement ps = c.prepareStatement(
-                 "UPDATE BOOKINGS SET Status = 'Confirmed', WaitlistPosition = NULL WHERE BookingId = ?")) {
+                 "UPDATE bookings SET Status = 'Confirmed', WaitlistPosition = NULL WHERE BookingId = ?")) {
             ps.setInt(1, bookingId);
             ps.executeUpdate();
         }
     }
 
     public static void insertNotification(int userId, Integer bookingId, String message) throws SQLException {
-        String sql = "INSERT INTO NOTIFICATIONS (UserId, BookingId, Message) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO notifications (UserId, BookingId, Message) VALUES (?, ?, ?)";
         try (Connection c = get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1, userId);
@@ -240,7 +240,7 @@ public class Db {
 
     public static void insertAudit(Integer userId, String action, String entityType,
                                    Integer entityId, String newValue) throws SQLException {
-        String sql = "INSERT INTO AUDIT_LOG (UserId, Action, EntityType, EntityId, NewValue) " +
+        String sql = "INSERT INTO audit_log (UserId, Action, EntityType, EntityId, NewValue) " +
                      "VALUES (?, ?, ?, ?, ?)";
         try (Connection c = get();
              PreparedStatement ps = c.prepareStatement(sql)) {
