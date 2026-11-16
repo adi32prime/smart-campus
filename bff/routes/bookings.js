@@ -118,11 +118,11 @@ router.get('/', async (req, res) => {
         b.Status         AS status,
         b.Priority       AS priority,
         b.WaitlistPosition AS waitlistPosition
-      FROM BOOKINGS b
-      JOIN RESOURCES r ON r.ResourceId = b.ResourceId
-      JOIN DEPARTMENT d ON d.DepartmentId = r.DepartmentId
-      JOIN LOCATION l ON l.LocationId = r.LocationId
-      JOIN TIME_SLOT ts ON ts.SlotId = b.SlotId
+      FROM bookings b
+      JOIN resources r ON r.ResourceId = b.ResourceId
+      JOIN department d ON d.DepartmentId = r.DepartmentId
+      JOIN location l ON l.LocationId = r.LocationId
+      JOIN time_slot ts ON ts.SlotId = b.SlotId
     `;
 
     if (userId) {
@@ -152,10 +152,10 @@ router.post('/:id/cancel', async (req, res) => {
       `SELECT b.ResourceId, b.SlotId, b.BookingDate,
               ts.StartTime, ts.EndTime,
               l.RoomNumber AS labId
-         FROM BOOKINGS b
-         JOIN TIME_SLOT ts ON ts.SlotId = b.SlotId
-         JOIN RESOURCES r ON r.ResourceId = b.ResourceId
-         JOIN LOCATION l ON l.LocationId = r.LocationId
+         FROM bookings b
+         JOIN time_slot ts ON ts.SlotId = b.SlotId
+         JOIN resources r ON r.ResourceId = b.ResourceId
+         JOIN location l ON l.LocationId = r.LocationId
         WHERE b.BookingId = ?`,
       [Number(id)]
     );

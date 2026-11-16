@@ -14,13 +14,12 @@ import SearchResourcesPage from './pages/SearchResourcesPage';
 import AdminMapPage from './pages/AdminMapPage';
 import ErrorBoundary from './components/ErrorBoundary';
 
-
 import useSSE from './hooks/useSSE';
 import ToastNotification from './components/ToastNotification';
 
 export default function App() {
   const [user, setUser] = useState(null);
-const [isReady, setIsReady] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [toastData, setToastData] = useState(null);
   
   // Only connect to SSE if the user is logged in
@@ -28,16 +27,20 @@ const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (lastEvent) {
-      // If the SSE sends an array of notifications, handle the most recent one
       setToastData(lastEvent);
     }
   }, [lastEvent]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('sc_user');
-    if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); } catch { /* ignore */ }
-    }
+    // THIS IS THE FIX: We are temporarily disabling the auto-login 
+    // so you can test that the login page appears correctly.
+    // If you want it back later, uncomment the 3 lines below:
+    
+    // const storedUser = localStorage.getItem('sc_user');
+    // if (storedUser) {
+    //   try { setUser(JSON.parse(storedUser)); } catch { /* ignore */ }
+    // }
+    
     setIsReady(true);
   }, []);
 

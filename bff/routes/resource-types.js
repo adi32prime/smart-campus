@@ -3,7 +3,7 @@ import pool from '../db.js';
 
 const router = express.Router({ mergeParams: true });
 
-// GET /api/departments/:deptId/resource-types
+// GET /api/department/:deptId/resource-types
 // Returns the 3 types (Lab, Classroom, Conference Hall) with a count of
 // resources in that department for each type.
 router.get('/', async (req, res) => {
@@ -21,8 +21,8 @@ router.get('/', async (req, res) => {
         rt.TypeName   AS typeName,
         rt.Description AS description,
         COUNT(r.ResourceId) AS count
-      FROM RESOURCE_TYPE rt
-      LEFT JOIN RESOURCES r
+      FROM resource_type rt
+      LEFT JOIN resources r
         ON r.TypeId = rt.TypeId
        AND r.DepartmentId = ?
       GROUP BY rt.TypeId, rt.TypeName, rt.Description

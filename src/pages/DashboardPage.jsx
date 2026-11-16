@@ -51,15 +51,15 @@ export default function DashboardPage({ user, onLogout }) {
   const RoleIcon = user?.role === "Faculty" ? BookOpen : GraduationCap;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50/60 via-slate-50 to-slate-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 text-slate-800 dark:text-slate-100 flex flex-col transition-colors duration-300">
       {/* TOP BAR */}
-      <header className="sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 transition-colors duration-300">
+      <header className="sticky top-0 z-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-b border-slate-200 dark:border-slate-700 transition-colors duration-300">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <Link
             to="/dashboard"
             className="flex items-center gap-2.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white shadow-sm">
               SC
             </span>
             <span className="font-semibold">Smart Campus</span>
@@ -71,14 +71,14 @@ export default function DashboardPage({ user, onLogout }) {
             <Link
               to="/dashboard/search"
               title="Search Resources"
-              className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600 transition-colors"
+              className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600 transition-colors"
             >
               <MapPin className="h-4 w-4" />
             </Link>
             <Link
               to="/dashboard/bookings"
               title="My Bookings"
-              className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600 transition-colors"
+              className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600 transition-colors"
             >
               <CalendarClock className="h-4 w-4" />
             </Link>
@@ -121,11 +121,17 @@ export default function DashboardPage({ user, onLogout }) {
         {/* PROFILE CARD */}
         <section
           aria-label="Profile"
-          className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 flex flex-col gap-6 md:flex-row md:items-center transition-colors duration-300"
+          className="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 flex flex-col gap-6 shadow-sm md:flex-row md:items-center transition-colors duration-300"
         >
-          <div className="flex items-center gap-5 md:flex-1">
+          {/* Accent bar (decorative) */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-indigo-500 to-violet-500"
+          />
+
+          <div className="flex items-center gap-5 md:flex-1 pl-2">
             <div
-              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-2xl font-semibold text-indigo-700 dark:text-indigo-300"
+              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-2xl font-semibold text-indigo-700 dark:text-indigo-300 ring-4 ring-indigo-50 dark:ring-indigo-900/30"
               aria-hidden="true"
             >
               {roleInitial}
@@ -145,7 +151,7 @@ export default function DashboardPage({ user, onLogout }) {
                 <dd className="flex items-center gap-2 font-medium">
                   <span
                     className={`h-2 w-2 rounded-full ${
-                      isActive ? "bg-green-500" : "bg-slate-400"
+                      isActive ? "bg-green-500 shadow-[0_0_0_3px_rgba(34,197,94,0.2)]" : "bg-slate-400"
                     }`}
                     aria-hidden="true"
                   />
@@ -197,7 +203,7 @@ export default function DashboardPage({ user, onLogout }) {
             [0, 1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-40 animate-pulse rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800"
+                className="h-40 animate-pulse rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800"
                 aria-hidden="true"
               />
             ))}
@@ -211,10 +217,10 @@ export default function DashboardPage({ user, onLogout }) {
                   navigate(`/dashboard/department/${dept.departmentId}`)
                 }
                 aria-label={`Open ${dept.departmentName} department`}
-                className="group flex min-h-[10rem] cursor-pointer flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 text-left transition-all hover:scale-[1.02] hover:border-indigo-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                className="group flex min-h-[10rem] cursor-pointer flex-col rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100/60 dark:hover:border-indigo-500 dark:hover:shadow-none focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/50">
-                  <Building2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/50 transition-colors group-hover:bg-indigo-600">
+                  <Building2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400 transition-colors group-hover:text-white" aria-hidden="true" />
                 </span>
 
                 <span className="mt-4 text-lg font-semibold">
@@ -225,13 +231,13 @@ export default function DashboardPage({ user, onLogout }) {
                 </span>
 
                 <span className="mt-auto flex items-end justify-between pt-4">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                  <span className="rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
                     {dept.resourceCount != null
                       ? `${dept.resourceCount} resources`
                       : "— resources"}
                   </span>
                   <ArrowRight
-                    className="h-5 w-5 text-slate-400 transition-colors group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+                    className="h-5 w-5 text-slate-400 transition-all group-hover:translate-x-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
                     aria-hidden="true"
                   />
                 </span>

@@ -26,7 +26,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      'SELECT UserId, Password, Role, Status FROM USERS WHERE UserId = ? LIMIT 1',
+'SELECT UserId, Password, Role, Status FROM users WHERE UserId = ? LIMIT 1',
       [uid]
     );
 

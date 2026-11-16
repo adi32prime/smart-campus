@@ -13,13 +13,13 @@ public class Db {
     private static final String URL =
         System.getenv().getOrDefault(
             "DB_URL",
-            "jdbc:mysql://localhost:3306/smartcampus?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC");
+            "jdbc:mysql://smart-campus-db-aditygk19-b965.h.aivencloud.com:10242/smartcampus?useSSL=true&requireSSL=true&serverTimezone=UTC");
 
     private static final String USER =
-        System.getenv().getOrDefault("DB_USER", "root");
+        System.getenv().getOrDefault("DB_USER", "avnadmin");
 
     private static final String PASS =
-        System.getenv().getOrDefault("DB_PASSWORD", "satoru87");
+        System.getenv().getOrDefault("DB_PASSWORD", "AVNS_u-aZxIIitRbWVQJm0Mn");
 
     static {
         try {
@@ -31,9 +31,17 @@ public class Db {
     }
 
     public static Connection get() throws SQLException {
+        try {
+            java.io.File caFile = new java.io.File("ca.pem");
+            if (caFile.exists()) {
+                System.setProperty("javax.net.ssl.trustStore", caFile.getAbsolutePath());
+                System.setProperty("javax.net.ssl.trustStoreType", "PEM");
+            }
+        } catch (Exception e) {
+            System.err.println("Error setting up SSL: " + e.getMessage());
+        }
         return DriverManager.getConnection(URL, USER, PASS);
     }
-
     public static boolean testConnection() {
         try (Connection c = get()) {
             return c != null && !c.isClosed();
@@ -49,7 +57,7 @@ public class Db {
     public static int findSlotId(String startTime, String endTime) throws SQLException {
         String s = normalizeTime(startTime);
         String e = normalizeTime(endTime);
-        String sql = "SELECT SlotId FROM TIME_SLOT WHERE StartTime = ? AND EndTime = ? LIMIT 1";
+String sql = "SELECT SlotId FROM time_slot WHERE StartTime = ? AND EndTime = ? LIMIT 1";
         try (Connection c = get();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, s);
@@ -78,10 +86,10 @@ public class Db {
             "SELECT r.ResourceId, r.ResourceName, r.Capacity, r.Status, " +
             "       d.DepartmentName, rt.TypeName, " +
             "       l.RoomNumber AS NodeId " +
-            "FROM RESOURCES r " +
-            "JOIN DEPARTMENT d ON d.DepartmentId = r.DepartmentId " +
-            "JOIN RESOURCE_TYPE rt ON rt.TypeId = r.TypeId " +
-            "JOIN LOCATION l ON l.LocationId = r.LocationId " +
+            "FROM resources r " +
+            "JOIN department d ON d.DepartmentId = r.DepartmentId " +
+            "JOIN resource_type rt ON rt.TypeId = r.TypeId " +
+            "JOIN location l ON l.LocationId = r.LocationId " +
             "WHERE r.Status = 'Available' " +
             "  AND r.Capacity >= ? "
         );
@@ -92,7 +100,7 @@ public class Db {
 
         sql.append(
             "  AND r.ResourceId NOT IN ( " +
-            "    SELECT b.ResourceId FROM BOOKINGS b " +
+            "    SELECT b.ResourceId FROM bookings b " +
             "    WHERE b.SlotId = ? AND b.BookingDate = ? " +
             "      AND b.Status IN ('Pending','Confirmed') " +
             "  ) "

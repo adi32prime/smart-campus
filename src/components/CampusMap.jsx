@@ -1,17 +1,4 @@
 import React, { useId, useMemo } from 'react';
-function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState(
-    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
-  );
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const onResize = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  return isMobile;
-}
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import {
   Building2,
   DoorOpen,
@@ -25,8 +12,6 @@ import {
 } from 'lucide-react';
 
 import { CAMPUS_NODES as NODES, CAMPUS_EDGES as EDGES } from '../data/campusGraph';
-const VIEW_W = 3000;
-const VIEW_H = 3000;
 
 const SPECS = {
   Gate: { w: 130, h: 130 },
@@ -114,7 +99,7 @@ function route(a, b) {
   const dy = b.y - a.y;
   const adx = Math.abs(dx);
   const ady = Math.abs(dy);
-  
+
   if (!adx || !ady || adx === ady) return [[a.x, a.y], [b.x, b.y]];
 
   const sx = Math.sign(dx);
@@ -289,13 +274,13 @@ function MapNode({ node, status, theme, uid, availableLabel, onClick, rank }) {
   );
 
   return (
-    <g 
-      transform={`translate(${node.x} ${node.y})`} 
+    <g
+      transform={`translate(${node.x} ${node.y})`}
       className={`${dim} ${isClickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
       onClick={() => { if (isClickable) onClick(node.id); }}
     >
       <title>{`${node.label} · ${node.type}`}</title>
-      
+
       {rank && status === 'available' && (
         <g transform={`translate(${hw - 16} ${-hh - 16})`}>
           <circle r="22" className="fill-indigo-600 stroke-white dark:stroke-slate-950" strokeWidth="4" />
@@ -315,31 +300,51 @@ function MapNode({ node, status, theme, uid, availableLabel, onClick, rank }) {
         </rect>
       )}
       {body}
-      {isUser && <Tag y={-hh - 32} label="YOU ARE HERE" Icon={MapPin} className="fill-amber-500" />}  
+      {isUser && <Tag y={-hh - 32} label="YOU ARE HERE" Icon={MapPin} className="fill-amber-500" />}
       {isDest && !isUser && <Tag y={-hh - 32} label="DESTINATION" Icon={Flag} className="fill-indigo-600" />}
     </g>
   );
 }
 
-export default function CampusMap({ 
-  userNodeId, 
-  selectedNodeId, 
-  path = [], 
-  availableNodeIds, 
-  rankedNodeIds = [], 
-  className = 'w-full h-auto', 
-  onNodeClick, 
-  isSidebarOpen,
+export default function CampusMap({
+  userNodeId,
+  selectedNodeId,
+  path = [],
+  availableNodeIds,
+  rankedNodeIds = [],
+  className = 'w-full h-auto',
+  onNodeClick,
 }) {
   const uid = useId().replace(/:/g, '');
-  const isMobile = useIsMobile();
 
-  const nodes = useMemo(() => NODES.map(n => ({ ...n, nodeId: n.id })), []);
+  const nodes = useMemo(() => NODES.map((n) => ({ ...n, nodeId: n.id })), []);
   const edges = useMemo(() => EDGES, []);
 
   const nodeMap = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
   const available = useMemo(() => (availableNodeIds ? new Set(availableNodeIds) : null), [availableNodeIds]);
   const pathSet = useMemo(() => new Set(path), [path]);
+
+  // View box is computed from the real node positions, so nothing is ever cut off.
+  const bounds = useMemo(() => {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach((n) => {
+      const s = SPECS[n.type] || FALLBACK_SPEC;
+      minX = Math.min(minX, n.x - s.w / 2);
+      maxX = Math.max(maxX, n.x + s.w / 2);
+      minY = Math.min(minY, n.y - s.h / 2);
+      maxY = Math.max(maxY, n.y + s.h / 2);
+    });
+    if (!Number.isFinite(minX)) return { x: 0, y: 0, w: 3000, h: 1700 };
+    const padX = 130;
+    const padTop = 120;     // room for "YOU ARE HERE" tag and rank badges
+    const padBottom = 200;  // room for legend and title card
+    return {
+      x: minX - padX,
+      y: minY - padTop,
+      w: maxX - minX + padX * 2,
+      h: maxY - minY + padTop + padBottom,
+    };
+  }, [nodes]);
 
   const distanceMap = useMemo(() => {
     const m = new Map();
@@ -359,7 +364,7 @@ export default function CampusMap({
         const a = nodeMap.get(e.from);
         const b = nodeMap.get(e.to);
         if (!a || !b) return null;
-        
+
         const points = route(a, b);
         let midX, midY;
         if (points.length >= 3) {
@@ -407,29 +412,20 @@ export default function CampusMap({
     [nodes]
   );
 
+  const { x: bx, y: by, w: bw, h: bh } = bounds;
+
   return (
-    <div className={`relative flex h-full w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${className}`}>
-      <div className="relative flex-1 overflow-hidden h-[60vh] lg:h-full">
-                  <TransformWrapper 
-          key={`${isSidebarOpen ? "open" : "closed"}-${isMobile ? "mobile" : "desktop"}`}
-          initialScale={1}
-          minScale={isMobile ? 0.2 : 1} 
-          maxScale={isMobile ? 3 : 1}  
-          centerOnInit={isMobile ? true : false}
-          initialPositionX={isMobile ? 0 : -60}
-          initialPositionY={isMobile ? 0 : 0}
-          initialPositionY={isMobile ? 0 : 0}
-          limitToBounds={false}
-          wheel={{ disabled: !isMobile }}
-          doubleClick={{ disabled: true }}
-          panning={{ disabled: !isMobile }}
-          pinch={{ disabled: !isMobile }}
-        >
-          <TransformComponent 
-            wrapperClass="!w-full !h-full" 
-            contentStyle={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}
-          >
-            <svg viewBox="-150 0 2850 1700" preserveAspectRatio="xMidYMid meet" className="block w-full h-full max-w-full max-h-full">              <defs>
+    <div className={`relative flex h-full w-full flex-col justify-center overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${className}`}>
+      {/* Whole map shrinks to fit the screen height: no scrolling, no zoom */}
+      <div className="relative w-full overflow-hidden">
+        <div className="w-full">
+            <svg
+              viewBox={`${bx} ${by} ${bw} ${bh}`}
+              preserveAspectRatio="xMidYMid meet"
+              className="block h-auto w-full"
+              style={{ maxHeight: 'calc(100vh - 90px)' }}
+            >
+              <defs>
                 <pattern id={`${uid}-minor`} width="25" height="25" patternUnits="userSpaceOnUse"><path d="M25 0H0V25" fill="none" strokeWidth="1" className="stroke-slate-200/70 dark:stroke-slate-800/70" /></pattern>
                 <pattern id={`${uid}-major`} width="125" height="125" patternUnits="userSpaceOnUse"><path d="M125 0H0V125" fill="none" strokeWidth="1.5" className="stroke-slate-300/70 dark:stroke-slate-700/60" /></pattern>
                 <filter id={`${uid}-shadow`} x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="6" stdDeviation="7" floodColor="#0f172a" floodOpacity="0.16" /></filter>
@@ -443,11 +439,11 @@ export default function CampusMap({
                 )}
               </defs>
 
-              <rect width={VIEW_W} height={VIEW_H} className="fill-slate-50 dark:fill-slate-950" />
-              <rect width={VIEW_W} height={VIEW_H} fill={`url(#${uid}-minor)`} />
-              <rect width={VIEW_W} height={VIEW_H} fill={`url(#${uid}-major)`} />
-              <rect x="14" y="14" width={VIEW_W - 28} height={VIEW_H - 28} rx="6" fill="none" strokeWidth="2" className="stroke-slate-300 dark:stroke-slate-700" />
-              <rect x="26" y="26" width={VIEW_W - 52} height={VIEW_H - 52} rx="3" fill="none" strokeWidth="1" strokeDasharray="2 6" className="stroke-slate-300 dark:stroke-slate-700" />
+              <rect x={bx} y={by} width={bw} height={bh} className="fill-slate-50 dark:fill-slate-950" />
+              <rect x={bx} y={by} width={bw} height={bh} fill={`url(#${uid}-minor)`} />
+              <rect x={bx} y={by} width={bw} height={bh} fill={`url(#${uid}-major)`} />
+              <rect x={bx + 14} y={by + 14} width={bw - 28} height={bh - 28} rx="6" fill="none" strokeWidth="2" className="stroke-slate-300 dark:stroke-slate-700" />
+              <rect x={bx + 26} y={by + 26} width={bw - 52} height={bh - 52} rx="3" fill="none" strokeWidth="1" strokeDasharray="2 6" className="stroke-slate-300 dark:stroke-slate-700" />
 
               <g fill="none" strokeLinecap="round" strokeLinejoin="round">
                 {baseEdges.map((e) => {
@@ -481,20 +477,23 @@ export default function CampusMap({
 
               {baseEdges.filter((e) => e.span > 220).map((e) => <DistanceBadge key={e.key} x={e.mx} y={e.my} distance={e.distance} active={activeEdges.has(e.key)} />)}
 
-              <g transform="translate(2600 90)" className="pointer-events-none">
+              {/* Compass: top-right of the view box */}
+              <g transform={`translate(${bx + bw - 90} ${by + 90})`} className="pointer-events-none">
                 <circle r="28" fill="none" strokeWidth="1.5" className="stroke-slate-300 dark:stroke-slate-600" />
                 <path d="M0 -22 L8 9 L0 3 L-8 9 Z" className="fill-slate-700 dark:fill-slate-300" />
                 <text y="-36" textAnchor="middle" className="fill-slate-500 font-mono text-[14px] font-bold dark:fill-slate-400">N</text>
               </g>
 
-              <g transform={`translate(${VIEW_W - 44 - 320} ${VIEW_H - 28 - 68})`} className="pointer-events-none">
+              {/* Title card: bottom-right */}
+              <g transform={`translate(${bx + bw - 44 - 320} ${by + bh - 28 - 68})`} className="pointer-events-none">
                 <rect width="320" height="68" rx="10" strokeWidth="1.5" className="fill-white/90 stroke-slate-300 dark:fill-slate-900/90 dark:stroke-slate-700" />
                 <rect width="8" height="68" rx="3" className="fill-indigo-500" />
                 <text x="26" y="26" className="fill-slate-800 text-[16px] font-bold tracking-[0.2em] dark:fill-slate-100">SMART CAMPUS</text>
                 <text x="26" y="49" className="fill-slate-500 font-mono text-[12px] tracking-[0.12em] dark:fill-slate-400">{route$ ? `ROUTE · ${route$.total} m · ${path.length} STOPS` : 'SITE PLAN · SELECT A RESOURCE'}</text>
               </g>
 
-              <g transform={`translate(44 ${VIEW_H - 28 - 46})`} className="pointer-events-none">
+              {/* Legend: bottom-left */}
+              <g transform={`translate(${bx + 44} ${by + bh - 28 - 46})`} className="pointer-events-none">
                 <rect width="770" height="46" rx="12" strokeWidth="1.5" className="fill-white/90 stroke-slate-300 dark:fill-slate-900/90 dark:stroke-slate-700" />
                 {[
                   { x: 20, label: 'You', cls: 'fill-amber-500 stroke-amber-600' },
@@ -511,8 +510,7 @@ export default function CampusMap({
                 <text x="642" y="23.5" dominantBaseline="central" className="fill-slate-600 font-mono text-[13px] dark:fill-slate-300">Walkway</text>
               </g>
             </svg>
-          </TransformComponent>
-        </TransformWrapper>
+        </div>
       </div>
     </div>
   );

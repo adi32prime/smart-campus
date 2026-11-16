@@ -26,9 +26,9 @@ router.get('/', async (req, res) => {
         l.RoomNumber    AS roomNumber,
         l.FloorNumber   AS floorNumber,
         rt.TypeName     AS typeName
-      FROM RESOURCES r
-      JOIN LOCATION l ON l.LocationId = r.LocationId
-      JOIN RESOURCE_TYPE rt ON rt.TypeId = r.TypeId
+      FROM resources r
+      JOIN location l ON l.LocationId = r.LocationId
+      JOIN resource_type rt ON rt.TypeId = r.TypeId
       WHERE r.DepartmentId = ?
         AND r.TypeId = ?
       ORDER BY r.ResourceId
@@ -48,8 +48,8 @@ router.get('/', async (req, res) => {
       `
       SELECT
         b.ResourceId AS resourceId
-      FROM BOOKINGS b
-      JOIN TIME_SLOT ts ON ts.SlotId = b.SlotId
+      FROM bookings b
+      JOIN time_slot ts ON ts.SlotId = b.SlotId
       WHERE b.BookingDate = ?
         AND b.Status IN ('Pending', 'Confirmed')
         AND ts.StartTime < ?
@@ -93,10 +93,10 @@ router.get('/:id', async (req, res) => {
         l.FloorNumber    AS floorNumber,
         rt.TypeId        AS typeId,
         rt.TypeName      AS typeName
-      FROM RESOURCES r
-      JOIN DEPARTMENT d ON d.DepartmentId = r.DepartmentId
-      JOIN LOCATION l ON l.LocationId = r.LocationId
-      JOIN RESOURCE_TYPE rt ON rt.TypeId = r.TypeId
+      FROM resources r
+JOIN department d ON d.DepartmentId = r.DepartmentId
+      JOIN location l ON l.LocationId = r.LocationId
+      JOIN resource_type rt ON rt.TypeId = r.TypeId
       WHERE r.ResourceId = ?
       `,
       [id]

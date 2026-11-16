@@ -4,7 +4,7 @@
 // Server keeps the response open and pushes new notifications.
 //
 // Polling strategy:
-//   - Every 3 seconds, for each connected user, query NOTIFICATIONS
+//   - Every 3 seconds, for each connected user, query notifications
 //     for rows newer than the last seen NotificationId.
 //   - If new rows exist, push them as SSE events.
 
@@ -54,7 +54,7 @@ async function pollNotifications() {
       const last = lastSeenByUser.get(userId) || 0;
       const [rows] = await pool.query(
         `SELECT NotificationId, BookingId, Message, CreatedAt
-           FROM NOTIFICATIONS
+           FROM notifications
           WHERE UserId = ? AND NotificationId > ?
           ORDER BY NotificationId ASC`,
         [userId, last]

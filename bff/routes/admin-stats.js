@@ -97,7 +97,7 @@ router.get('/reports', requireAdmin, async (req, res) => {
     const slots = slotRow.c || 8;
 
     // ------------------------------------------------------------------
-    // KPI 1: Total Bookings + Confirmed + previous period
+    // KPI 1: Total bookings + Confirmed + previous period
     // ------------------------------------------------------------------
     const [[kpi1]] = await pool.query(
       `SELECT

@@ -65,15 +65,33 @@ export default function LoginPage({ onLogin }) {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 transition-colors duration-300">
-      
+
       {/* Global Theme Toggle - Floating Top Right */}
       <div className="absolute top-6 right-6 z-50">
         <ThemeToggle />
       </div>
 
       {/* LEFT: branding */}
-      <aside className="relative w-full md:w-1/2 lg:w-3/5 bg-gradient-to-br from-indigo-600 to-indigo-900 text-white flex flex-col justify-between px-8 py-8 md:px-12 md:py-12 lg:px-20 lg:py-16">
-        <div className="my-auto py-4 md:py-0">
+      <aside className="relative w-full md:w-1/2 lg:w-3/5 overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 dark:from-indigo-800 dark:via-indigo-900 dark:to-slate-950 text-white flex flex-col justify-between px-8 py-8 md:px-12 md:py-12 lg:px-20 lg:py-16">
+
+        {/* Decorative background (purely visual) */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl" />
+          <div className="absolute -bottom-40 -right-24 h-[28rem] w-[28rem] rounded-full bg-violet-500/20 blur-3xl" />
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+              backgroundSize: "48px 48px",
+            }}
+          />
+        </div>
+
+        <div className="relative my-auto py-4 md:py-0">
+          <span className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-lg font-bold ring-1 ring-white/30 backdrop-blur">
+            SC
+          </span>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
             Smart Campus
           </h1>
@@ -82,9 +100,12 @@ export default function LoginPage({ onLogin }) {
           </p>
 
           {/* Feature rows */}
-          <ul className="hidden md:block mt-12 space-y-6 max-w-md">
+          <ul className="hidden md:block mt-12 space-y-4 max-w-md">
             {FEATURES.map(({ icon: Icon, title, text }) => (
-              <li key={title} className="flex items-start gap-4">
+              <li
+                key={title}
+                className="flex items-start gap-4 rounded-xl bg-white/5 p-3 ring-1 ring-white/10 backdrop-blur-sm transition-colors hover:bg-white/10"
+              >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/20">
                   <Icon className="h-5 w-5 text-indigo-100" aria-hidden="true" />
                 </span>
@@ -96,11 +117,15 @@ export default function LoginPage({ onLogin }) {
             ))}
           </ul>
         </div>
+
+        <p className="relative hidden md:block text-xs text-indigo-200/80">
+          MiniLeap Project · Computer Science and Engineering · AY 2026–27
+        </p>
       </aside>
 
       {/* RIGHT: login form */}
       <main className="w-full md:w-1/2 lg:w-2/5 flex items-center justify-center px-6 py-10 md:px-10 bg-white dark:bg-slate-900 md:bg-slate-50 md:dark:bg-slate-900 transition-colors">
-        <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm md:shadow-md p-6 sm:p-8 transition-colors">
+        <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm md:shadow-xl md:shadow-indigo-100/50 dark:md:shadow-none p-6 sm:p-8 transition-colors">
           <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">Sign in</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Choose your role to continue</p>
 
@@ -123,10 +148,10 @@ export default function LoginPage({ onLogin }) {
                       setRole(id);
                       setError("");
                     }}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                       selected
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-700 dark:border-indigo-500 dark:bg-indigo-900/50 dark:text-indigo-300"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700"
+                        ? "border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-600 dark:border-indigo-500 dark:bg-indigo-900/50 dark:text-indigo-300 dark:ring-indigo-500"
+                        : "border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700"
                     }`}
                   >
                     <Icon className="h-5 w-5" aria-hidden="true" />
@@ -153,7 +178,7 @@ export default function LoginPage({ onLogin }) {
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
                   placeholder={activeRole.placeholder}
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-shadow focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/40"
                 />
               </div>
 
@@ -171,27 +196,31 @@ export default function LoginPage({ onLogin }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-shadow focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/40"
                 />
               </div>
             </div>
 
             {/* Error area */}
             <div className="min-h-[1.5rem] mt-3" aria-live="polite">
-              {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+              {error && (
+                <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                  {error}
+                </p>
+              )}
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="mt-2 w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : (
                 <LogIn className="h-4 w-4" aria-hidden="true" />
               )}
-              Sign in
+              {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
 

@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   LogOut,
-  ChevronRight,
   AlertCircle,
   Loader2,
   MapPin,
@@ -76,7 +75,7 @@ function recalculateFromLocalGraph(source, results) {
     const distances = {};
     const previous = {};
     const queue = [];
-    
+
     Object.keys(CONNECTIONS).forEach(node => { distances[node] = Infinity; });
     distances[start] = 0;
     queue.push({ id: start, dist: 0 });
@@ -190,7 +189,7 @@ export default function SearchResourcesPage({ user, onLogout }) {
         if (!res.ok) throw new Error(data.message || "Search failed");
 
         const localResults = recalculateFromLocalGraph(sourceNodeId, data);
-        
+
         setResults(localResults);
         if (localResults.length > 0) {
           setSelectedResource(localResults[0]);
@@ -232,8 +231,8 @@ export default function SearchResourcesPage({ user, onLogout }) {
   const availableNodeIds = results.map(r => r.nodeId);
   const selectedPath = selectedResource?.path || [];
 
-  // --- REUSABLE FORM CONTENT ---
-  const FiltersForm = () => (
+  // --- FILTER FORM (rendered as a plain element, NOT as a component, so inputs keep focus while typing) ---
+  const filtersForm = (
     <div className="flex flex-col gap-4">
       <div>
         <label className="mb-1 block text-sm font-medium">Date</label>
@@ -262,7 +261,7 @@ export default function SearchResourcesPage({ user, onLogout }) {
         </select>
       </div>
 
-      <div className="mt-2 min-h-[40px]">
+      <div className="min-h-[24px]">
         {submitting && (
           <p className="flex items-center gap-2 text-sm text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" /> Searching…
@@ -282,9 +281,72 @@ export default function SearchResourcesPage({ user, onLogout }) {
     </div>
   );
 
+  // --- NEAREST-FIRST LIST: same numbers as the badges on the map; click to select ---
+  const resultsList = results.length > 0 && (
+    <div className="mt-2 border-t border-slate-200 pt-4 dark:border-slate-700">
+      <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        Nearest first
+      </h3>
+      <ul className="flex flex-col gap-1.5">
+        {results.map((r, i) => {
+          const active = selectedResource?.resourceId === r.resourceId;
+          return (
+            <li key={r.resourceId}>
+              <button
+                type="button"
+                onClick={() => setSelectedResource(r)}
+                className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                  active
+                    ? "border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-950/40"
+                    : "border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+                }`}
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1 truncate font-medium">{r.resourceName}</span>
+                <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">{r.distance}m</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+
+  // --- SELECTED CARD (inside the sidebar on desktop; floating when sidebar is closed or on mobile) ---
+  const selectedCard = selectedResource && (
+    <div className="flex w-full flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+      <div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Selected</p>
+        <p className="text-lg font-bold leading-tight text-indigo-600 dark:text-indigo-400">
+          {selectedResource.resourceName}
+        </p>
+        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+          {selectedResource.distance}m · Capacity {selectedResource.capacity}
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={handleBook}
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        >
+          <BookOpen className="h-4 w-4" /> Book Now
+        </button>
+        <button
+          onClick={() => setSelectedResource(null)}
+          aria-label="Clear selection"
+          className="rounded-xl border border-slate-200 p-2.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:border-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col overflow-hidden">
-      
+
       {/* Top Nav */}
       <header className="shrink-0 z-30 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
         <div className="flex items-center justify-between px-4 py-3 sm:px-6">
@@ -314,32 +376,43 @@ export default function SearchResourcesPage({ user, onLogout }) {
         </div>
       </header>
 
-      {/* Main Row */}
-      <div className="flex-1 relative overflow-hidden">
-        
-        {/* LEFT SIDEBAR (Desktop) — Overlay style */}
-        <aside 
-          className={`absolute top-0 left-0 bottom-0 z-20 hidden lg:flex flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 shadow-2xl transition-transform duration-300 ${
-            isSidebarOpen ? "translate-x-0 w-[320px]" : "-translate-x-full w-[320px]"
-          } overflow-hidden`}
+      {/* Main Row: sidebar and map sit SIDE BY SIDE, so the sidebar never covers the map */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+
+        {/* LEFT SIDEBAR (Desktop) */}
+        <aside
+          className={`hidden shrink-0 overflow-hidden bg-white transition-[width] duration-300 dark:bg-slate-800 lg:block ${
+            isSidebarOpen
+              ? "w-[320px] border-r border-slate-200 dark:border-slate-700"
+              : "w-0"
+          }`}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Filters</h2>
-            <button 
-              onClick={() => setIsSidebarOpen(false)} 
-              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">
-            <FiltersForm />
+          <div className="flex h-full w-[320px] flex-col">
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Filters</h2>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                aria-label="Hide filters"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {filtersForm}
+              {resultsList}
+            </div>
+            {selectedResource && (
+              <div className="shrink-0 border-t border-slate-200 p-4 dark:border-slate-700">
+                {selectedCard}
+              </div>
+            )}
           </div>
         </aside>
 
         {/* RIGHT MAP AREA */}
-        <main className="flex-1 relative">
-          
+        <main className="relative min-w-0 flex-1">
+
           {/* Floating Menu Button (when sidebar closed) */}
           {!isSidebarOpen && (
             <button
@@ -361,39 +434,20 @@ export default function SearchResourcesPage({ user, onLogout }) {
           </button>
 
           {/* The Map Itself */}
-          <CampusMap 
+          <CampusMap
             userNodeId={sourceNodeId}
             selectedNodeId={selectedResource?.nodeId}
             path={selectedPath}
             availableNodeIds={availableNodeIds}
             rankedNodeIds={results.map(r => r.nodeId)}
             onNodeClick={handleNodeClick}
-            isSidebarOpen={isSidebarOpen}
             className="w-full h-full !rounded-none !border-none"
           />
 
-          {/* Floating Book Now Pill */}
+          {/* Floating card: only when the sidebar is closed (desktop) or on mobile */}
           {selectedResource && (
-            <div className="absolute bottom-20 left-6 z-50">
-              <div className="flex w-64 flex-col gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-2xl">
-                <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Selected</p>
-                  <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400 leading-tight">
-                    {selectedResource.resourceName}
-                  </p>
-                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
-                    {selectedResource.distance}m · Capacity {selectedResource.capacity}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={handleBook} className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                    <BookOpen className="h-4 w-4" /> Book Now
-                  </button>
-                  <button onClick={() => setSelectedResource(null)} className="rounded-xl border border-slate-200 dark:border-slate-700 p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:text-slate-200">
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
+            <div className={`absolute bottom-4 left-4 z-30 w-64 ${isSidebarOpen ? "lg:hidden" : ""}`}>
+              {selectedCard}
             </div>
           )}
         </main>
@@ -404,16 +458,17 @@ export default function SearchResourcesPage({ user, onLogout }) {
         <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-slate-900 lg:hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
             <h2 className="text-lg font-bold">Filters</h2>
-            <button onClick={() => setIsMobileFiltersOpen(false)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+            <button onClick={() => setIsMobileFiltersOpen(false)} aria-label="Close filters" className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
               <X className="h-5 w-5" />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-4">
-            <FiltersForm />
+            {filtersForm}
+            {resultsList}
           </div>
           <div className="p-4 border-t border-slate-200 dark:border-slate-700">
-            <button 
-              onClick={() => setIsMobileFiltersOpen(false)} 
+            <button
+              onClick={() => setIsMobileFiltersOpen(false)}
               className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700"
             >
               Apply & Show Map

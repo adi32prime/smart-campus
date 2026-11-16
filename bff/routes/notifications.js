@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
               Message        AS message,
               IsRead         AS isRead,
               CreatedAt      AS createdAt
-         FROM NOTIFICATIONS
+         FROM notifications
         WHERE UserId = ?
         ORDER BY CreatedAt DESC
         LIMIT 100`,
@@ -34,7 +34,7 @@ router.get('/unread-count', async (req, res) => {
   if (!userId) return res.status(400).json({ message: 'userId is required' });
   try {
     const [rows] = await pool.query(
-      `SELECT COUNT(*) AS cnt FROM NOTIFICATIONS
+      `SELECT COUNT(*) AS cnt FROM notifications
         WHERE UserId = ? AND IsRead = 0`,
       [Number(userId)]
     );
@@ -50,7 +50,7 @@ router.post('/:id/read', async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query(
-      `UPDATE NOTIFICATIONS SET IsRead = 1 WHERE NotificationId = ?`,
+      `UPDATE notifications SET IsRead = 1 WHERE NotificationId = ?`,
       [Number(id)]
     );
     res.json({ ok: true });
@@ -66,7 +66,7 @@ router.post('/read-all', async (req, res) => {
   if (!userId) return res.status(400).json({ message: 'userId required' });
   try {
     await pool.query(
-      `UPDATE NOTIFICATIONS SET IsRead = 1 WHERE UserId = ?`,
+      `UPDATE notifications SET IsRead = 1 WHERE UserId = ?`,
       [Number(userId)]
     );
     res.json({ ok: true });

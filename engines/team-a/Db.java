@@ -11,13 +11,13 @@ public class Db {
     private static final String URL =
         System.getenv().getOrDefault(
             "DB_URL",
-            "jdbc:mysql://localhost:3306/smartcampus?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC");
+            "jdbc:mysql://smart-campus-db-aditygk19-b965.h.aivencloud.com:10242/defaultdb?useSSL=true&requireSSL=true&serverTimezone=UTC");
 
     private static final String USER =
-        System.getenv().getOrDefault("DB_USER", "root");
+        System.getenv().getOrDefault("DB_USER", "avnadmin");
 
     private static final String PASS =
-        System.getenv().getOrDefault("DB_PASSWORD", "satoru87");
+        System.getenv().getOrDefault("DB_PASSWORD", "AVNS_u-aZxIIitRbWVQJm0Mn");
 
     static {
         try {
@@ -29,6 +29,15 @@ public class Db {
     }
 
     public static Connection get() throws SQLException {
+        try {
+            java.io.File caFile = new java.io.File("ca.pem");
+            if (caFile.exists()) {
+                System.setProperty("javax.net.ssl.trustStore", caFile.getAbsolutePath());
+                System.setProperty("javax.net.ssl.trustStoreType", "PEM");
+            }
+        } catch (Exception e) {
+            System.err.println("Error setting up SSL: " + e.getMessage());
+        }
         return DriverManager.getConnection(URL, USER, PASS);
     }
 

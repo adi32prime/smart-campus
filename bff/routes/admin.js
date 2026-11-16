@@ -22,7 +22,7 @@ router.get('/users', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT UserId AS userId, Role AS role, Status AS status
-         FROM USERS
+         FROM users
          ORDER BY UserId`
     );
     res.json(rows);
@@ -113,7 +113,7 @@ router.get('/audit-logs', async (req, res) => {
               OldValue    AS oldValue,
               NewValue    AS newValue,
               CreatedAt   AS createdAt
-         FROM AUDIT_LOG
+         FROM audit_log
          ORDER BY AuditId DESC
          LIMIT ?`,
       [limit]
