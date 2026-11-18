@@ -4,7 +4,49 @@ import pool from '../db.js';
 import bcrypt from 'bcryptjs';
 
 const router = express.Router();
+// GET /api/auth/me
+// Validate an existing login session
+router.get('/me', async (req, res) => {
+  const authHeader = req.headers.authorization;
 
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'No authentication token provided' });
+  }
+
+  const token = authHeader.slice(7);
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const [rows] = await pool.query(
+      'SELECT UserId, Role, Status FROM users WHERE UserId = ? LIMIT 1',
+      [decoded.userId]
+    );
+
+    if (rows.length === 0 || rows[0].Status !== 'Active') {
+      return res.status(401).json({ message: 'Session is no longer valid' });
+    }
+
+    if (rows[0].Role !== decoded.role) {
+      return res.status(401).json({ message: 'Session role is no longer valid' });
+    }
+
+    return res.json({
+      user: {
+        userId: rows[0].UserId,
+        role: rows[0].Role,
+        status: rows[0].Status,
+      },
+    });
+  } catch (err) {
+    if (err.name === 'TokenExpiredError' || err.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Session expired or invalid. Please log in again.' });
+    }
+
+    console.error('GET /api/auth/me error:', err);
+    return res.status(500).json({ message: 'Could not validate session' });
+  }
+});
 // POST /api/auth/login
 // Body: { role, userId, password }
 router.post('/login', async (req, res) => {
@@ -64,7 +106,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { userId: user.UserId, role: user.Role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRY || '24h' }
+      { expiresIn: process.env.JWT_EXPIRY || '7d' }
     );
 
     res.json({

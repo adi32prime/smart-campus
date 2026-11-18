@@ -20,6 +20,7 @@ import ToastNotification from './components/ToastNotification';
 export default function App() {
   const [user, setUser] = useState(null);
   const [isReady, setIsReady] = useState(false);
+  const [sessionCheckFailed, setSessionCheckFailed] = useState(false);
   const [toastData, setToastData] = useState(null);
   
   // Only connect to SSE if the user is logged in
@@ -31,18 +32,66 @@ export default function App() {
     }
   }, [lastEvent]);
 
+
   useEffect(() => {
-    // THIS IS THE FIX: We are temporarily disabling the auto-login 
-    // so you can test that the login page appears correctly.
-    // If you want it back later, uncomment the 3 lines below:
-    
-    // const storedUser = localStorage.getItem('sc_user');
-    // if (storedUser) {
-    //   try { setUser(JSON.parse(storedUser)); } catch { /* ignore */ }
-    // }
-    
-    setIsReady(true);
+    let cancelled = false;
+
+    async function restoreSession() {
+      const token = localStorage.getItem('sc_token');
+
+      if (!token) {
+        setIsReady(true);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          import.meta.env.VITE_API_BASE_URL + '/api/auth/me',
+          {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem('sc_token');
+          localStorage.removeItem('sc_user');
+          setUser(null);
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error(`Session check failed: ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        if (!cancelled) {
+          localStorage.setItem('sc_user', JSON.stringify(data.user));
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error('Session restoration failed:', error);
+
+        if (!cancelled) {
+          setSessionCheckFailed(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsReady(true);
+        }
+      }
+    }
+
+    restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
 
   async function handleLogin({ role, userId, password }) {
       const res = await fetch(import.meta.env.VITE_API_BASE_URL + '/api/auth/login', {
@@ -88,6 +137,23 @@ export default function App() {
     }
     return children;
   }
+
+  if (sessionCheckFailed) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-slate-900">
+        <p className="text-slate-700 dark:text-slate-200">
+          Unable to verify your login session. Your saved login has not been deleted.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="rounded-lg bg-indigo-600 px-5 py-2 text-white"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
 
   return (
     <>
