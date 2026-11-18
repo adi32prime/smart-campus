@@ -6,12 +6,17 @@ public class BookingMain {
             throws Exception {
 
         /*
-         * Change this password to your MySQL
-         * root password.
+         * Reads MySQL credentials from environment variables.
          */
 
-        String mysqlUser = "root";
-        String mysqlPassword = "Sup@123*";
+        String mysqlUser = System.getenv().getOrDefault("MYSQL_USER", "root");
+        String mysqlPassword = System.getenv("MYSQL_PASSWORD");
+
+        if (mysqlPassword == null || mysqlPassword.isBlank()) {
+            throw new IllegalStateException(
+                    "Set MYSQL_PASSWORD before running BookingMain."
+            );
+        }
 
         BookingManager manager =
                 new BookingManager(
