@@ -195,7 +195,7 @@ function DistanceBadge({ x, y, distance, active }) {
   );
 }
 
-function MapNode({ node, status, theme, uid, availableLabel, onClick, rank }) {
+function MapNode({ node, status, theme, uid, availableLabel, onClick, rank, clickableOccupied }) {
   const spec = SPECS[node.type] || FALLBACK_SPEC;
   const Icon = ICONS[node.type] || Building2;
   const { w, h } = spec;
@@ -268,10 +268,11 @@ function MapNode({ node, status, theme, uid, availableLabel, onClick, rank }) {
 
   const ringRx = node.type === 'Gate' ? 22 : node.type === 'Department' ? 16 : 14;
   const isSourceNode = ['Gate', 'Office', 'Library', 'Department'].includes(node.type);
-  const isClickable = onClick && (
-    (ROOM_TYPES.has(node.type) && status === 'available') ||
-    isSourceNode
-  );
+const isClickable = onClick && (
+  (ROOM_TYPES.has(node.type) &&
+    (status === 'available' || (clickableOccupied && status === 'occupied'))) ||
+  isSourceNode
+);
 
   return (
     <g
@@ -314,6 +315,7 @@ export default function CampusMap({
   rankedNodeIds = [],
   className = 'w-full h-auto',
   onNodeClick,
+  clickableOccupied = false,
 }) {
   const uid = useId().replace(/:/g, '');
 
@@ -472,7 +474,7 @@ export default function CampusMap({
                 const availableLabel = isRoom && available ? (available.has(node.id) ? 'Available' : 'Occupied') : node.type;
                 const rankIndex = rankedNodeIds.indexOf(node.id);
                 const rank = rankIndex !== -1 ? rankIndex + 1 : null;
-                return <MapNode key={node.id} node={node} status={status} theme={THEMES[status]} uid={uid} availableLabel={availableLabel} onClick={onNodeClick} rank={rank} />;
+                return <MapNode key={node.id} node={node} status={status} theme={THEMES[status]} uid={uid} availableLabel={availableLabel} onClick={onNodeClick} rank={rank} clickableOccupied={clickableOccupied} />;
               })}
 
               {baseEdges.filter((e) => e.span > 220).map((e) => <DistanceBadge key={e.key} x={e.mx} y={e.my} distance={e.distance} active={activeEdges.has(e.key)} />)}
