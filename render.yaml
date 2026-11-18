@@ -14,6 +14,10 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
+      - key: DB_TRUSTSTORE_BASE64_PATH
+        value: /etc/secrets/aiven-truststore.p12.b64
+      - key: DB_TRUSTSTORE_PASSWORD
+        sync: false
     healthCheckPath: /health
     autoDeploy: true
 
@@ -31,6 +35,10 @@ services:
       - key: DB_USER
         sync: false
       - key: DB_PASSWORD
+        sync: false
+      - key: DB_TRUSTSTORE_BASE64_PATH
+        value: /etc/secrets/aiven-truststore.p12.b64
+      - key: DB_TRUSTSTORE_PASSWORD
         sync: false
     healthCheckPath: /health
     autoDeploy: true

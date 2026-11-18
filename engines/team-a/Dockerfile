@@ -10,5 +10,5 @@ WORKDIR /app
 COPY --from=build /app/*.class ./
 COPY --from=build /app/lib ./lib
 
-EXPOSE 8091
+EXPOSE 10000
 CMD ["java", "-cp", ".:lib/*", "TeamAHttpServer"]

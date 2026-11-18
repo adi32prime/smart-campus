@@ -4,7 +4,7 @@ import java.util.Map;
 import java.sql.Connection;
 
 /**
- * BookingService — orchestrates booking decisions for Team A.
+* bookingservice — orchestrates booking decisions for Team A.
  */
 public class BookingService {
 
@@ -66,7 +66,7 @@ public class BookingService {
 
                 try {
                     // 1. Lock the resource row to serialize concurrent requests
-                    String lockSql = "SELECT ResourceId FROM RESOURCES WHERE ResourceId = ? FOR UPDATE";
+                    String lockSql = "SELECT ResourceId FROM resources WHERE ResourceId = ? FOR UPDATE";
                     try (java.sql.PreparedStatement ps = conn.prepareStatement(lockSql)) {
                         ps.setInt(1, resourceId);
                         ps.executeQuery();
@@ -74,7 +74,7 @@ public class BookingService {
 
                     // 2. Check if occupied (using the SAME connection inside the transaction)
                     int confirmed = 0;
-                    String countSql = "SELECT COUNT(*) FROM BOOKINGS WHERE ResourceId=? AND SlotId=? AND BookingDate=? AND Status IN ('Pending','Confirmed')";
+                    String countSql = "SELECT COUNT(*) FROM bookings WHERE ResourceId=? AND SlotId=? AND BookingDate=? AND Status IN ('Pending','Confirmed')";
                     try (java.sql.PreparedStatement ps = conn.prepareStatement(countSql)) {
                         ps.setInt(1, resourceId);
                         ps.setInt(2, slotId);
@@ -86,7 +86,7 @@ public class BookingService {
 
                     if (confirmed == 0) {
                         // Free → Confirmed
-                        String insertSql = "INSERT INTO BOOKINGS (UserId, ResourceId, SlotId, BookingDate, Purpose, Status, Priority) VALUES (?,?,?,?,?,?,?)";
+                        String insertSql = "INSERT INTO bookings (UserId, ResourceId, SlotId, BookingDate, Purpose, Status, Priority) VALUES (?,?,?,?,?,?,?)";
                         int id = -1;
                         try (java.sql.PreparedStatement ps = conn.prepareStatement(insertSql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
                             ps.setInt(1, userId);
@@ -115,7 +115,7 @@ public class BookingService {
                     }
 
                     // Occupied → Waitlisted
-                    String insertSql = "INSERT INTO BOOKINGS (UserId, ResourceId, SlotId, BookingDate, Purpose, Status, Priority) VALUES (?,?,?,?,?,?,?)";
+                    String insertSql = "INSERT INTO bookings (UserId, ResourceId, SlotId, BookingDate, Purpose, Status, Priority) VALUES (?,?,?,?,?,?,?)";
                     int id = -1;
                     try (java.sql.PreparedStatement ps = conn.prepareStatement(insertSql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
                         ps.setInt(1, userId);
@@ -133,7 +133,7 @@ public class BookingService {
 
                     // Compute waitlist position INSIDE the transaction
                     int pos = 1;
-                    String posSql = "SELECT COUNT(*) FROM BOOKINGS WHERE ResourceId=? AND SlotId=? AND BookingDate=? AND Status='Waitlisted' AND (Priority < ? OR (Priority = ? AND BookingId < ?))";
+                    String posSql = "SELECT COUNT(*) FROM bookings WHERE ResourceId=? AND SlotId=? AND BookingDate=? AND Status='Waitlisted' AND (Priority < ? OR (Priority = ? AND BookingId < ?))";
                     try (java.sql.PreparedStatement ps = conn.prepareStatement(posSql)) {
                         ps.setInt(1, resourceId);
                         ps.setInt(2, slotId);
@@ -147,7 +147,7 @@ public class BookingService {
                     }
 
                     // Update position inside the transaction
-                    try (java.sql.PreparedStatement ps = conn.prepareStatement("UPDATE BOOKINGS SET WaitlistPosition = ? WHERE BookingId = ?")) {
+                    try (java.sql.PreparedStatement ps = conn.prepareStatement("UPDATE bookings SET WaitlistPosition = ? WHERE BookingId = ?")) {
                         ps.setInt(1, pos);
                         ps.setInt(2, id);
                         ps.executeUpdate();

@@ -26,12 +26,12 @@ import java.util.regex.Pattern;
  */
 public class TeamAHttpServer {
 
-    private static final int PORT = 8090;
-
+private static final int PORT =
+    Integer.parseInt(System.getenv().getOrDefault("PORT", "8090"));
     public static void main(String[] args) throws IOException {
         System.out.println("DB connectivity: " + (Db.testConnection() ? "OK" : "FAILED"));
 
-        HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
+        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", PORT), 0);
         server.createContext("/health",   new HealthHandler());
         server.createContext("/labs",     new LabsHandler());
         server.createContext("/schedule", new ScheduleHandler());
@@ -134,7 +134,7 @@ public class TeamAHttpServer {
             if (priority == null) priority = 2;
             if (purpose == null) purpose = "Booking";
 
-            BookingService.Result r = BookingService.createOrWaitlist(
+BookingService.Result r = BookingService.createOrWaitlist(
                     userId, labId, date, startTime, endTime, purpose, priority);
 
             String json = "{"
@@ -178,7 +178,7 @@ public class TeamAHttpServer {
             if (priority == null) priority = 2;
             if (purpose == null) purpose = "Waitlist request";
 
-            BookingService.Result r = BookingService.createOrWaitlist(
+BookingService.Result r = BookingService.createOrWaitlist(
                     userId, labId, date, startTime, endTime, purpose, priority);
 
             String json = "{"
@@ -216,7 +216,7 @@ public class TeamAHttpServer {
                 return;
             }
 
-            Map<String, Object> out = BookingService.promoteAfterCancel(labId, date, startTime, endTime);
+Map<String, Object> out = BookingService.promoteAfterCancel(labId, date, startTime, endTime);
 
             StringBuilder sb = new StringBuilder("{");
             boolean first = true;
@@ -262,7 +262,7 @@ public class TeamAHttpServer {
                 }
                 String sql =
                     "SELECT BookingId, UserId, Priority, WaitlistPosition " +
-                    "FROM BOOKINGS " +
+                    "FROM bookings " +
                     "WHERE ResourceId=? AND SlotId=? AND BookingDate=? AND Status='Waitlisted' " +
                     "ORDER BY Priority ASC, BookingId ASC";
                 StringBuilder sb = new StringBuilder("[");

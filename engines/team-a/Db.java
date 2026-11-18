@@ -5,19 +5,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Base64;
+
 
 public class Db {
-
-    private static final String URL =
-        System.getenv().getOrDefault(
-            "DB_URL",
-            "jdbc:mysql://smart-campus-db-aditygk19-b965.h.aivencloud.com:10242/smartcampus?useSSL=true&requireSSL=true&serverTimezone=UTC");
-
-    private static final String USER =
-        System.getenv().getOrDefault("DB_USER", "avnadmin");
-
-    private static final String PASS =
-        System.getenv().getOrDefault("DB_PASSWORD", "AVNS_u-aZxIIitRbWVQJm0Mn");
 
     static {
         try {
@@ -28,18 +22,50 @@ public class Db {
         }
     }
 
-    public static Connection get() throws SQLException {
-        try {
-            java.io.File caFile = new java.io.File("ca.pem");
-            if (caFile.exists()) {
-                System.setProperty("javax.net.ssl.trustStore", caFile.getAbsolutePath());
-                System.setProperty("javax.net.ssl.trustStoreType", "PEM");
-            }
-        } catch (Exception e) {
-            System.err.println("Error setting up SSL: " + e.getMessage());
+    private static String requiredEnv(String name) throws SQLException {
+        String value = System.getenv(name);
+
+        if (value == null || value.trim().isEmpty()) {
+            throw new SQLException("Missing required environment variable: " + name);
         }
-        return DriverManager.getConnection(URL, USER, PASS);
+
+        return value;
     }
+
+
+public static Connection get() throws SQLException {
+    String encodedPath = requiredEnv("DB_TRUSTSTORE_BASE64_PATH");
+    String trustStorePassword = requiredEnv("DB_TRUSTSTORE_PASSWORD");
+
+    try {
+        String encoded = Files.readString(Path.of(encodedPath)).trim();
+        byte[] trustStoreBytes = Base64.getDecoder().decode(encoded);
+
+        Path trustStoreFile = Files.createTempFile(
+            "aiven-truststore-", ".p12"
+        );
+
+        Files.write(trustStoreFile, trustStoreBytes);
+        trustStoreFile.toFile().deleteOnExit();
+
+        System.setProperty(
+            "javax.net.ssl.trustStore",
+            trustStoreFile.toAbsolutePath().toString()
+        );
+        System.setProperty("javax.net.ssl.trustStoreType", "PKCS12");
+        System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
+
+    } catch (IOException | IllegalArgumentException e) {
+        throw new SQLException("Unable to configure Aiven truststore", e);
+    }
+
+    String url = requiredEnv("DB_URL");
+    String user = requiredEnv("DB_USER");
+    String password = requiredEnv("DB_PASSWORD");
+
+    return DriverManager.getConnection(url, user, password);
+}
+
 
     public static boolean testConnection() {
         try (Connection c = get()) {
