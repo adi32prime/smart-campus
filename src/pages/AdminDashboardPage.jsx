@@ -116,6 +116,7 @@ async function request(url, signal, isValid, headers = {}) {
 }
 
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+const apiUrl = (path) => path;
 
 function groupByDepartment(resources) {
   const groups = {};
@@ -148,31 +149,62 @@ export default function AdminDashboardPage({ user, onLogout }) {
   const controllerRef = useRef(null);
   const slot = BASE_TIME_SLOTS[slotIdx];
 
-  const loadAll = useCallback(async () => {
-    if (controllerRef.current) controllerRef.current.abort();
-    const controller = new AbortController();
-    controllerRef.current = controller;
-    const { signal } = controller;
-    setRefreshing(true);
+const loadAll = useCallback(async () => {
+  if (controllerRef.current) controllerRef.current.abort();
 
-    const adminHeaders = { "X-Role": "Admin" };
-    const mapParams = new URLSearchParams({ date, startTime: slot.start, endTime: slot.end });
-    const [s, r, b] = await Promise.all([
-      request("/api/admin/stats", signal, isObject, adminHeaders),
-      request(`/api/admin/map-status?${mapParams.toString()}`, signal, isObject, adminHeaders),
-      request("/api/bookings?status=all&limit=5", signal, Array.isArray),    ]);
+  const controller = new AbortController();
+  controllerRef.current = controller;
+  const { signal } = controller;
 
-    if (signal.aborted) return;
+  setRefreshing(true);
 
-    if (s.ok) setStats(s.data);
-    if (r.ok) setResourceData(r.data);
-    if (b.ok) setRecentBookings(b.data.slice(0, 10));
+  const adminHeaders = { "X-Role": "Admin" };
+  const mapParams = new URLSearchParams({
+    date,
+    startTime: slot.start,
+    endTime: slot.end,
+  });
 
-    setFailed({ stats: !s.ok, resources: !r.ok, bookings: !b.ok });
-    if (s.ok || r.ok || b.ok) setLastUpdated(new Date());
-    setLoading(false);
-    setRefreshing(false);
-  }, [date, slot.start, slot.end]);   // <-- end of loadAll
+  const [s, r, b] = await Promise.all([
+    request(
+      apiUrl("/api/admin/stats"),
+      signal,
+      isObject,
+      adminHeaders
+    ),
+    request(
+      apiUrl(`/api/admin/map-status?${mapParams.toString()}`),
+      signal,
+      isObject,
+      adminHeaders
+    ),
+    request(
+      apiUrl("/api/admin/recent-bookings?limit=5"),
+      signal,
+      Array.isArray,
+      adminHeaders
+    ),
+  ]);
+
+  if (signal.aborted) return;
+
+  if (s.ok) setStats(s.data);
+  if (r.ok) setResourceData(r.data);
+  if (b.ok) setRecentBookings(b.data.slice(0, 5));
+
+  setFailed({
+    stats: !s.ok,
+    resources: !r.ok,
+    bookings: !b.ok,
+  });
+
+  if (s.ok || r.ok || b.ok) {
+    setLastUpdated(new Date());
+  }
+
+  setLoading(false);
+  setRefreshing(false);
+}, [date, slot.start, slot.end]);   // <-- end of loadAll
     async function handleShowAll() {
     if (showAllBookings) {
       // Collapse
@@ -184,9 +216,12 @@ export default function AdminDashboardPage({ user, onLogout }) {
     if (allBookings.length > 0) return; // already fetched
     setLoadingAll(true);
     try {
-      const res = await fetch(import.meta.env.VITE_API_BASE_URL + '/api/admin/recent-bookings?limit=200', {
-        headers: { "X-Role": "Admin" },
-      });
+      const res = await fetch(
+  apiUrl("/api/admin/recent-bookings?limit=200"),
+  {
+    headers: { "X-Role": "Admin" },
+  }
+);
       if (res.ok) {
         const data = await res.json();
         setAllBookings(Array.isArray(data) ? data : []);
