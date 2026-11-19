@@ -134,15 +134,17 @@ For local development, the frontend, BFF, Team A, Team B and MySQL can run on th
 
 ### 5.2 Ports, Runtimes, and Versions
 
-| Service | Language / Runtime | Version | Port | Where the port is set |
-|---|---|---|---|---|
-| Frontend | JavaScript (React 19, Vite 8, Tailwind 3) | Node.js 20 toolchain | 5173 | Vite dev server default; `vite.config.js` |
-| BFF | Node.js with Express 5 | Node.js 20 LTS | 8080 | `PORT` in `bff/.env` |
-| Team A | Java | 21 | 8090 | Hardcoded in `engines/team-a/TeamAHttpServer.java` |
-| Team B | Java | 21 | 8091 | Hardcoded in `engines/team-b/TeamBHttpServer.java` |
-| MySQL | MySQL Server | 8.0 | 3306 | MySQL server configuration; database name `smartcampus` |
+The following table distinguishes local development ports from production port configuration.
 
-> **Port note:** The ports in this table describe the local development setup. Team A and Team B bind to ports 8090 and 8091; keep the Render service configuration aligned with the listeners used by each Java service.
+| **Service** | **Language / Runtime** | **Version** | **Local Development Port** | **Production Port / Configuration** |
+|---|---|---|---:|---|
+| Frontend | JavaScript (React 19, Vite 8, Tailwind 3) | Node.js 20 toolchain | 5173 | Hosted by Vercel over HTTPS; no fixed application port |
+| BFF | Node.js with Express 5 | Node.js 20 LTS | 8080 | Render-provided `PORT` (normally 10000) |
+| Team A | Java | 21 | 8090 | Render-provided `PORT` (normally 10000); Dockerfile exposes 10000 |
+| Team B | Java | 21 | 8091 | Render-provided `PORT` (normally 10000); Dockerfile exposes 10000 |
+| MySQL | MySQL Server | 8.0 | 3306 | Aiven-provided database port, configured through `DB_PORT` |
+
+> **Port configuration note:** The local ports are the default values used during Windows development. The BFF reads `process.env.PORT` and defaults to 8080. Team A and Team B read the `PORT` environment variable and default to 8090 and 8091 respectively. Their Java HTTP servers bind to `0.0.0.0`, and their Dockerfiles expose port 10000. Render supplies the production `PORT` value to its web services. Aiven supplies the production database hostname and port through its connection settings.
 
 ### 5.3 Environment Variables
 
