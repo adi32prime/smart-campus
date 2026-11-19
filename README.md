@@ -94,34 +94,43 @@ Booking campus labs, classrooms and halls is currently handled through registers
 
 ### 5.1 High-Level Architecture
 
+The application has one logical architecture and two execution contexts: local development and cloud production.
+
+**Production deployment**
+
 ```text
-+--------------------------------------------------------------+
-|  PRESENTATION LAYER                                          |
-|  React 19 + Vite 8 + Tailwind 3          port 5173           |
-+------------------------------+-------------------------------+
-                               |  HTTP/JSON  (/api/*)  and  SSE
-                               v
-+--------------------------------------------------------------+
-|  APPLICATION / API LAYER                                     |
-|                                                              |
-|  BFF  Node.js 20 + Express 5             port 8080           |
-|  (auth, RBAC, orchestration, SSE poller)                     |
-|        |                         |                           |
-|        | HTTP/JSON               | HTTP/JSON                 |
-|        v                         v                           |
-|  Team A  Java 21  port 8090   Team B  Java 21  port 8091     |
-|  (scheduling, waitlist)       (graph, routing, search)       |
-+--------+-------------------------+---------------------------+
-         |  JDBC                   |  JDBC            ^
-         |                         |                  | mysql2 (reads,
-         v                         v                  |  stored procedures)
-+--------------------------------------------------------------+
-|  DATA LAYER                                                  |
-|  MySQL 8.0   port 3306   database: smartcampus               |
-+--------------------------------------------------------------+
+Students / Faculty / Admin
+          |
+          v
+React + Vite frontend (Vercel)
+https://smart-campus-six-lac.vercel.app
+          |
+          | HTTPS API requests and Server-Sent Events
+          v
+Node.js + Express BFF (Render)
+https://smart-campus-bff-ls4v.onrender.com
+       /                         \
+      / HTTP/JSON                 \ HTTP/JSON
+     v                             v
+Team A — Java 21 (Render)     Team B — Java 21 (Render)
+Scheduling + waitlist         Routing + search
+       \                         /
+        \ JDBC over TLS         / JDBC over TLS
+         v                     v
+          Shared MySQL database
+                 (Aiven)
 ```
 
-The system uses a three-layer layout with a Backend-for-Frontend orchestrator. The **presentation layer** is the React single-page application. The **application/API layer** is the BFF plus the two Java engines. The **data layer** is one MySQL schema. The React frontend talks **only** to the BFF. The BFF orchestrates Team A and Team B over HTTP/JSON and reads directly from MySQL for ordinary reads and for the stored procedures owned by Team C. Team A and Team B each connect directly to MySQL over JDBC.
+- **Vercel** hosts the React/Vite production frontend.
+- **Render** hosts the Node.js/Express BFF and both Java engine services.
+- **Aiven** hosts the shared MySQL database used by the backend services.
+- The browser communicates with the BFF; it does not connect directly to the Java engines or database.
+- `vercel.json` forwards `/api/*` requests to the Render BFF and rewrites frontend routes to the SPA entry point.
+- Service URLs, database connection details and secrets are configured in the hosting providers' environment settings. Never commit production credentials to the repository.
+
+**Local development**
+
+For local development, the frontend, BFF, Team A, Team B and MySQL can run on the developer's Windows machine. The local ports and startup commands are documented in Section 16.
 
 ### 5.2 Ports, Runtimes, and Versions
 
@@ -133,16 +142,16 @@ The system uses a three-layer layout with a Backend-for-Frontend orchestrator. T
 | Team B | Java | 21 | 8091 | Hardcoded in `engines/team-b/TeamBHttpServer.java` |
 | MySQL | MySQL Server | 8.0 | 3306 | MySQL server configuration; database name `smartcampus` |
 
-> **Hardening note:** Team A and Team B currently hardcode their ports. For deployment on a PaaS that assigns the port at runtime, both servers should read the `PORT` environment variable and fall back to 8090 / 8091 when it is not set.
+> **Port note:** The ports in this table describe the local development setup. Team A and Team B bind to ports 8090 and 8091; keep the Render service configuration aligned with the listeners used by each Java service.
 
 ### 5.3 Environment Variables
 
-**BFF (`bff/.env`)**
+**BFF (`bff/.env`, local development)****
 
 | Variable | Example | Purpose |
 |---|---|---|
 | `PORT` | `8080` | Port the BFF listens on |
-| `DB_HOST` | `localhost` (`127.0.0.1` on Ubuntu) | MySQL host |
+| `DB_HOST` | `localhost` | MySQL host for local development; production uses the Aiven host configured in Render |
 | `DB_PORT` | `3306` | MySQL port |
 | `DB_USER` | `root` | MySQL user |
 | `DB_PASSWORD` | (secret) | MySQL password |
@@ -153,7 +162,7 @@ The system uses a three-layer layout with a Backend-for-Frontend orchestrator. T
 | `ROUTER_URL` | `http://localhost:8091` | Base URL of Team B |
 | `CORS_ORIGIN` | `http://localhost:5173` | Origin allowed by the CORS middleware |
 
-**Team A environment variables**
+**Team A environment variables (local development)**
 
 | Variable | Example | Purpose |
 |---|---|---|
@@ -161,7 +170,7 @@ The system uses a three-layer layout with a Backend-for-Frontend orchestrator. T
 | `DB_USER` | `root` | MySQL user |
 | `DB_PASSWORD` | (secret) | MySQL password |
 
-**Team B environment variables**
+**Team B environment variables (local development)**
 
 | Variable | Example | Purpose |
 |---|---|---|
@@ -169,7 +178,7 @@ The system uses a three-layer layout with a Backend-for-Frontend orchestrator. T
 | `DB_USER` | `root` | MySQL user |
 | `DB_PASSWORD` | (secret) | MySQL password |
 
-> **Hardening note:** `Db.java` contains a fallback database password that is used when no environment variable is supplied. A credential must never ship in source. Remove the fallback so the engine fails fast at startup when the variable is missing, and rotate any password that has been committed.
+> **Security note:** Production database credentials are supplied through Render environment variables. Do not publish credentials in this README, source code, screenshots or issue reports. If a credential is ever exposed, follow the database/provider's credential-rotation procedure.
 
 ### 5.4 Repository Layout
 
@@ -334,25 +343,20 @@ smart-campus/
 
 > **Rule:** Frontend must never talk to Java engines or the DB directly. Every browser request goes through the BFF, which is the only component that authenticates the caller.
 
-### 5.7 Frontend ↔ BFF Proxy
+### 5.7 Frontend ↔ BFF Routing
 
-During development the frontend runs on port 5173 and the BFF on port 8080. The browser code calls relative paths such as `/api/departments`, and the Vite dev server forwards them:
+**Local development:** the frontend runs on port 5173 and the BFF on port 8080. The browser calls relative paths such as `/api/departments`, and the Vite development server forwards `/api/*` to `http://localhost:8080` using the proxy in `vite.config.js`.
 
-```js
-// vite.config.js (representative)
-export default defineConfig({
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-      },
-    },
-  },
-});
+**Production:** Vercel handles API routing through `vercel.json`. Requests matching `/api/:path*` are rewritten to the deployed Render BFF:
+
+```json
+{
+  "source": "/api/:path*",
+  "destination": "https://smart-campus-bff-ls4v.onrender.com/api/:path*"
+}
 ```
 
-> **Note:** This proxy exists only in the Vite dev server. `npm run build` produces static files that contain no proxy, so a production deployment needs a real reverse proxy (for example Nginx) that forwards `/api/*` to the BFF and disables buffering for SSE. See Section 16.4. The snippet above is representative; confirm it against the repository's `vite.config.js`.
+The SPA fallback rewrites frontend routes to `/index.html`, allowing React Router pages to load directly and survive browser refreshes. Vercel handles both frontend routing and API rewrites in production.
 
 ---
 
@@ -1374,7 +1378,7 @@ Procedures wrap multi-step writes so that either every step commits or none does
 |---|---|
 | Route all booking creation through the stored procedure | The live path inserts from Team A's Java code; one transactional path would remove duplicated rules |
 | Add a unique index guarding Confirmed bookings per resource, slot and date | Gives a database-level guarantee even if application code is bypassed |
-| Use lowercase table names everywhere | Avoids the Linux case-sensitivity failure described in Section 16.3 |
+| Verify production SQL compatibility | Keep table and column naming consistent with the deployed MySQL schema |
 | Hash passwords at rest | Seed data stores plaintext (Section 17) |
 | Add a dedicated least-privilege DB user | Services currently connect with `root` in development |
 
@@ -1587,7 +1591,7 @@ Team D owns everything the user touches and everything that connects the engines
 
 **Why server-side polling.** The database is the source of truth for notifications, and the writers (stored procedures and Team A) are separate processes. Polling the table from the BFF requires no changes to those writers and no message broker, and a 3-second interval meets the 5-second target while the query stays an indexed lookup per connected user.
 
-> **Note:** Reverse proxies can hold back SSE data. The BFF sets `X-Accel-Buffering: no` on the stream, and any Nginx in front must use `proxy_buffering off` (Section 16.4), otherwise notifications arrive late or in bursts.
+> **Note:** Reverse proxies can buffer SSE responses. The BFF marks the event stream with `X-Accel-Buffering: no`. If you place an additional proxy in front of the BFF, ensure it streams SSE responses without buffering.
 
 ### 9.7 Accessibility and UX
 
@@ -1690,10 +1694,10 @@ Team D owns everything the user touches and everything that connects the engines
 | Risk | Detail | Mitigation |
 |---|---|---|
 | Hardcoded engine ports | Team A (8090) and Team B (8091) ignore `$PORT` | Read `PORT` with a default (Section 5.2) |
-| Uppercase SQL table names | Queries use `USERS`, `BOOKINGS` and so on; they fail on case-sensitive Linux MySQL | Set `lower_case_table_names=1` or lowercase every query (Section 16.3) |
+| Production database connectivity | Cloud services require correct Aiven connection settings and TLS configuration | Keep the BFF and Java JDBC environment variables/truststore settings aligned with Aiven (Section 16.3) |
 | `X-Role` header trust | Admin access can be claimed by any client | Derive role from the verified JWT |
 | CORS configuration | `CORS_ORIGIN` must match the frontend origin exactly | Set it per environment |
-| Relative `/api` paths | Built frontend breaks without a reverse proxy | Add an Nginx proxy or use `VITE_API_BASE_URL` (Section 16.4) |
+| Relative `/api` paths | API requests fail if the production rewrite is missing or incorrect | Verify the `/api/*` rewrite in `vercel.json` and check the Vercel deployment configuration |
 | `graphVersion` reset | Team B's version string is tied to the running process; a restart can change it, invalidating cached routes | Persist or derive the version from the edge data |
 | `campus_edge` source of truth | Team B builds the graph in code while `campus_edge` holds the same data in MySQL | Pick one source and generate the other from it |
 
@@ -2948,7 +2952,7 @@ The KPIs below were defined at S1 of the Hybrid SDLC and are measured at S6. The
 | KPI-S5 | Data integrity | Referential integrity maintained | Attempt to insert a booking with an invalid user / resource / slot; verify FK rejects | 100% rejected |
 | KPI-S6 | Data integrity | CHECK constraints enforced | Attempt invalid role, invalid status, capacity 0; verify CHECK rejects | 100% rejected |
 | KPI-S7 | Documentation | Every mandatory evidence item present in report | Cross-check the 8 evidence items in Appendix B of the MiniLeap report | 8 of 8 present |
-| KPI-S8 | Release | Reproducible build from a fresh clone | Clone to a new folder, follow Section 16, run the system, book a resource | Works on Windows and Ubuntu |
+| KPI-S8 | Release | Reproducible local setup and deployed release | Clone to a new folder, follow the Windows setup in Section 16.2, run the system, and verify the production URL | Local Windows setup and cloud production deployment verified |
 
 ### 14.3 How to Measure Locally
 
@@ -3045,7 +3049,6 @@ For a full procedure timing loop, wrap `CALL CREATE_BOOKING_TRANSACTION(...)` in
 | MySQL Workbench | DB inspection and querying |
 | Postman / curl | API testing |
 | PowerShell (Windows) | Running services, timing KPIs |
-| Bash (Linux / Ubuntu) | Running services on the college server |
 | Chrome DevTools | Frontend debugging, network inspection |
 
 ### 15.4 Removed / Deprecated
@@ -3204,185 +3207,97 @@ Each should return a JSON object with `status: ok`.
 
 Browse to http://localhost:5173 and log in with one of the demo credentials in Section 17.
 
-### 16.3 First-Time Setup — Linux / Ubuntu
+### 16.3 Production Deployment — Vercel, Render and Aiven
 
-The college server runs Ubuntu. The steps are the same but adapted.
+The production application is deployed across three cloud providers:
 
-**Step 1 — Install prerequisites**
+| Component | Provider | Production endpoint |
+|---|---|---|
+| React + Vite frontend | Vercel | [smart-campus-six-lac.vercel.app](https://smart-campus-six-lac.vercel.app) |
+| Node.js + Express BFF | Render | [smart-campus-bff-ls4v.onrender.com](https://smart-campus-bff-ls4v.onrender.com) |
+| Team A — Java scheduling engine | Render | [smart-campus-team-a-bmpf.onrender.com](https://smart-campus-team-a-bmpf.onrender.com) |
+| Team B — Java routing engine | Render | [smart-campus-team-b-k7nd.onrender.com](https://smart-campus-team-b-k7nd.onrender.com) |
+| Shared MySQL database | Aiven | Private database connection configured through environment variables |
 
-```bash
-sudo apt update
-sudo apt install -y openjdk-21-jdk nodejs npm mysql-server git
-```
+**Live application:** [https://smart-campus-six-lac.vercel.app](https://smart-campus-six-lac.vercel.app)
 
-Verify:
+#### 16.3.1 Frontend — Vercel
 
-```bash
-node --version
-java --version
-mysql --version
-```
+- Vercel builds the frontend using `npm run build` and publishes the generated `dist/` directory.
+- `vercel.json` forwards `/api/*` requests to the Render BFF.
+- The SPA fallback rewrites frontend routes to `/index.html` for React Router navigation and refreshes.
+- The frontend's production environment variables are configured in Vercel. Values prefixed with `VITE_` are included in browser assets; never place passwords, private keys or other secrets in them.
 
-**Step 2 — Clone the repository**
+#### 16.3.2 Backend services — Render
 
-```bash
-git clone https://github.com/adi32prime/smart-campus.git
-cd smart-campus
-```
+Three independent Render services are deployed:
 
-**Step 3 — Start MySQL**
+1. **BFF** — Node.js/Express API, authentication, orchestration, database access and Server-Sent Events.
+2. **Team A** — Java 21 scheduling, booking and waitlist engine.
+3. **Team B** — Java 21 campus routing and resource-search engine.
 
-```bash
-sudo systemctl start mysql
-sudo systemctl enable mysql
-```
+The repository includes `render.yaml` for the service definitions. Runtime configuration, including database connection details, JWT configuration and inter-service URLs, is supplied through Render environment variables. The Java services use the configured TLS truststore for the Aiven database connection.
 
-**Step 4 — Load the schema**
+#### 16.3.3 Database — Aiven
 
-```bash
-sudo mysql -u root -p -e "DROP DATABASE IF EXISTS smartcampus;"
-sudo mysql -u root -p < db/smartcampus_dump.sql
-sudo mysql -u root -p < db/phase1_migration.sql
-```
+- Aiven hosts the shared MySQL database used by the BFF, Team A and Team B.
+- The BFF uses its `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` and `DB_NAME` configuration.
+- The Java services use their JDBC connection configuration and TLS truststore.
+- Keep all production credentials and truststore secrets in provider environment settings. Do not commit them to GitHub or paste them into public logs or issue reports.
 
-**Step 5 — Install Node dependencies**
+#### 16.3.4 Release and deployment verification
 
-```bash
-npm install
-cd bff && npm install && cd ..
-```
+For a frontend release:
 
-**Step 6 — Create the BFF `.env`**
+1. Make and test the change locally.
+2. Run `npm run build` and confirm the build succeeds.
+3. Review `git status` and stage only the intended files.
+4. Commit and push the change to `main`.
+5. In Vercel, confirm the Production deployment uses the expected commit and reaches **Ready**.
+6. Test the affected workflow on the public application.
 
-Create `bff/.env` with the same keys as Section 16.2, step 5. On Ubuntu use:
+For a BFF or Java-engine change, also verify the corresponding Render deployment and inspect its service logs/health endpoint. Avoid redeploying unrelated services.
 
-```text
-DB_HOST=127.0.0.1
-```
+#### 16.3.5 Deployment work completed
 
-(`localhost` also works, but `127.0.0.1` avoids any socket-vs-TCP ambiguity.)
+The following deployment and integration work has been completed during production rollout:
 
-**Step 7 — Start the services**
-
-Java uses `:` instead of `;` in the classpath on Linux:
-
-*Terminal 1 — Team A*
-
-```bash
-cd engines/team-a
-javac -cp ".:lib/*" *.java
-java -cp ".:lib/*" TeamAHttpServer
-```
-
-*Terminal 2 — Team B*
-
-```bash
-cd engines/team-b
-javac -cp ".:lib/*" *.java
-java -cp ".:lib/*" TeamBHttpServer
-```
-
-*Terminal 3 — BFF*
-
-```bash
-cd bff
-npm run dev
-```
-
-*Terminal 4 — Frontend*
-
-```bash
-npm run dev
-```
-
-**Step 8 — Verify**
-
-```bash
-curl http://localhost:8080/api/health
-curl http://localhost:8090/health
-curl http://localhost:8091/health
-```
-
-**Step 9 — Important: Linux MySQL is case-sensitive for table names**
-
-The current code queries tables with uppercase names (`USERS`, `BOOKINGS`, etc.). Windows MySQL is case-insensitive by default, so this works on a Windows dev laptop. On Linux, MySQL is case-sensitive for table names by default, so those queries will fail with `Table 'smartcampus.USERS' doesn't exist`.
-
-Two ways to fix on the college server:
-
-**Option A — Set `lower_case_table_names=1` (server-wide, recommended)**
-
-Edit `/etc/mysql/mysql.conf.d/mysqld.cnf` and add:
-
-```text
-[mysqld]
-lower_case_table_names=1
-```
-
-Then restart MySQL:
-
-```bash
-sudo systemctl restart mysql
-```
-
-Re-load the schema afterwards:
-
-```bash
-sudo mysql -u root -p < db/smartcampus_dump.sql
-sudo mysql -u root -p < db/phase1_migration.sql
-```
-
-**Option B — Change every SQL query to use lowercase table names**
-
-This is the cleaner long-term fix. In the BFF, replace `FROM USERS` with `FROM users`, `INTO BOOKINGS` with `INTO bookings`, etc., in every route file and in `sse.js`. Similarly, in Team A's `Db.java` and Team B's `Db.java`, lowercase every table name.
-
-Discuss with your mentor which approach fits the college server policy.
-
-**Other known Linux / deployment issues**
-
-> **Frontend relative API paths** — the built frontend contains `/api/...` paths with no host. A reverse proxy (Nginx) is required to forward `/api/*` to the BFF on port 8080 and to disable `proxy_buffering` for `/api/stream`.
->
-> **Case-sensitive table names** — BFF and Team A/B queries still use UPPERCASE (`USERS`, `BOOKINGS`). On Linux MySQL set `lower_case_table_names=1` before loading the dump, or rewrite all SQL to lowercase.
->
-> **Map `campusGraph.js` is the source of truth for coordinates** — the campus map layout is defined in `src/data/campusGraph.js`. Team B's graph is hardcoded in `TeamBHttpServer.java`. If either changes, the visual map and the routing distances can drift apart.
+- Deployed the React/Vite frontend to Vercel.
+- Deployed the Node.js/Express BFF and both Java engine services to Render.
+- Connected the backend services to the shared Aiven MySQL database.
+- Configured Java JDBC TLS/truststore connectivity for the Aiven database.
+- Configured Vercel API rewrites so `/api/*` requests reach the Render BFF.
+- Resolved production database compatibility and connectivity issues encountered during deployment.
+- Verified production health/API endpoints and core booking, routing and search workflows during troubleshooting.
+- Standardized the frontend resource booking slots to 9:00 AM–5:00 PM.
+- Corrected live SSE notification handling so booking confirmations, cancellations and waitlist promotions display the appropriate popup information.
+- Verified the Vercel Production deployment for frontend commit `f1f9499`.
 
 ### 16.4 Production Build Notes
 
-`npm run dev` runs Vite's dev server. For a production build:
+To create and verify a production frontend build locally:
 
-```bash
+```powershell
+npm install
 npm run build
 ```
 
-This produces `dist/` — static HTML, CSS, and JS. To serve it:
-
-- Deploy `dist/` behind any static host (Nginx, Apache, Vercel, Netlify, S3).
-- The built frontend still calls `/api/...` relatively, so the host must proxy `/api/*` to the BFF. On Nginx:
-
-```nginx
-location /api/ {
-    proxy_pass http://localhost:8080/api/;
-    proxy_http_version 1.1;
-    proxy_set_header Connection "";
-    proxy_buffering off;      # important for SSE
-}
-```
-
-The `proxy_buffering off` line is required for SSE notifications to reach the browser without delay.
-
-Alternatively, use a `VITE_API_BASE_URL` environment variable and replace relative `/api/...` calls with `${import.meta.env.VITE_API_BASE_URL}/...`. This requires editing every fetch call in the frontend.
+Vite writes the production assets to `dist/`. Vercel builds and serves these assets in production. The repository's `vercel.json` supplies the API rewrite and SPA fallback.
 
 ### 16.5 Troubleshooting
 
-| Symptom | Likely cause | Fix |
+| Symptom | Likely cause | What to check |
 |---|---|---|
-| BFF logs `MySQL connection failed` | Wrong `DB_PASSWORD` in `bff/.env`, or MySQL not running | Verify password, `Start-Service MySQL80` |
-| `Table 'smartcampus.USERS' doesn't exist` | Running on Linux MySQL (case-sensitive) | See Section 16.3, step 9 |
-| Team A / Team B crash at startup with `ClassNotFoundException: com.mysql.cj.jdbc.Driver` | `mysql-connector-j` not on classpath | Compile and run with `-cp ".:lib/*"` (Linux) or `.;lib/*` (Windows) |
-| Frontend shows "Couldn't load departments" | BFF not running, or `/api` proxy misconfigured | Verify `http://localhost:8080/api/departments` returns data |
-| SSE notifications never arrive | Proxy buffering enabled | Add `proxy_buffering off` in Nginx; `X-Accel-Buffering: no` is already set in `sse.js` |
-| Port already in use | Another instance is running | Kill the old process or change the port |
-| Booking fails with "No matching time slot" | Frontend sent a slot not in `time_slot` | Check that `startTime` / `endTime` match the 8 rows in `time_slot` (09:00–17:00 in 1-hour increments) |
-| `Access denied for user 'root'@'localhost'` | Wrong password | Reset MySQL root password or use a different DB user |
+| Frontend cannot load API data | BFF is unavailable or the Vercel API rewrite is incorrect | Check the Vercel deployment, `vercel.json` and BFF Render logs |
+| Vercel deployment fails | Build error or incorrect project/build settings | Review Vercel Build Logs and run `npm run build` locally |
+| Booking or waitlist request fails | Team A is unavailable, database connection failed or request data is invalid | Check BFF and Team A Render logs and the Aiven connection settings |
+| Campus route/search fails | Team B is unavailable or its database query failed | Check Team B Render logs and its health endpoint |
+| BFF reports MySQL connection errors | Incorrect Aiven host, port, user, password, database name or TLS settings | Compare the variable names and connection settings in Render with Aiven; do not expose secret values |
+| Java service cannot connect to Aiven | JDBC URL or TLS truststore configuration is missing or incorrect | Check the service's JDBC environment variables and truststore settings in Render |
+| Live notifications do not appear | SSE stream is disconnected or the BFF cannot poll the notification table | Check the browser Network tab for `/api/stream` and inspect BFF logs |
+| Production site shows an older frontend | Latest commit has not finished deploying | Confirm Vercel Production references the expected commit and is **Ready** |
+| Booking fails with “No matching time slot” | Requested time does not match a row in `time_slot` | Confirm the slot exists in the database; the frontend currently offers hourly slots from 09:00 to 17:00 |
+| Service responds slowly after inactivity | Hosting instance may be starting up | Allow it to start, retry and inspect provider logs |
 
 ---
 
@@ -3474,9 +3389,15 @@ The following completed features are demonstrated at the review.
 - **Colored badges** — Used (teal), Expired (orange), Confirmed, Waitlisted, Cancelled
 - **Refresh-safe routing** — page reload keeps you on the current page
 
-### 18.4 Deferred for Later
+### 18.4 Production Deployment Status
 
-> **Deferred for later:** Full deployment to a public URL is deferred. The plan is to host MySQL on the college Ubuntu server and run Team A, Team B, BFF, and frontend on the same server behind a reverse proxy. The case-sensitivity and `$PORT` issues noted in Section 16.3 must be resolved before that deployment.
+The Smart Campus application is deployed and publicly available at [https://smart-campus-six-lac.vercel.app](https://smart-campus-six-lac.vercel.app).
+
+The production architecture uses Vercel for the frontend, Render for the BFF and both Java engines, and Aiven for the shared MySQL database. The production deployment and core application workflows have been verified.
+
+The latest frontend notification-popup correction was committed as `f1f9499` (`Fix live notification popup messages`), pushed to the GitHub `main` branch and confirmed **Ready** in Vercel Production.
+
+The cloud deployment described in Section 16.3 is the project's production deployment.
 
 ---
 
