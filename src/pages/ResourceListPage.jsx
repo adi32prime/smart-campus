@@ -22,8 +22,8 @@ const DEPT_NAMES = { A1: "CSE", B1: "Electrical", C1: "AIML", D1: "Mechanical" }
 const TYPE_NAMES = { 1: "Labs", 2: "Classrooms", 3: "Conference Halls" };
 const TYPE_ICONS = { 1: FlaskConical, 2: GraduationCap, 3: Users };
 
-const DAY_START_HOUR = 10; // 10:00 AM
-const DAY_END_HOUR = 18; // 6:00 PM
+const DAY_START_HOUR = 9; // 9:00 AM
+const DAY_END_HOUR = 17; // 5:00 PM
 const MAX_DAYS_AHEAD = 30;
 
 /* ------------------------------------------------------------------ */
@@ -122,8 +122,8 @@ export default function ResourceListPage({ user, onLogout }) {
 
   const slots = getAvailableSlots(date);
   const selectedSlot = slots[slotIndex] ?? slots[0];
-  const startTime = selectedSlot?.start || "10:00";
-  const endTime = selectedSlot?.end || "11:00";
+const startTime = selectedSlot?.start || "09:00";
+const endTime = selectedSlot?.end || "10:00";
 
   const minDate = getToday();
   const maxDate = getMaxDate();
