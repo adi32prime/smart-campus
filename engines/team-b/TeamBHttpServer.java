@@ -13,15 +13,17 @@ import java.util.regex.Pattern;
 
 public class TeamBHttpServer {
 
-    private static final int PORT = 8091;
-    private static Graph graph;
+private static final int PORT =
+    Integer.parseInt(System.getenv().getOrDefault("PORT", "8091"));
+
+private static Graph graph;
     private static RoutingEngine routingEngine;
 
     public static void main(String[] args) throws IOException {
 
         buildGraph();
         routingEngine = new RoutingEngine();
-        HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
+        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", PORT), 0);
         server.createContext("/health", new HealthHandler());
         server.createContext("/route", new RouteHandler());
         server.createContext("/search", new SearchHandler(graph, routingEngine));
@@ -112,18 +114,37 @@ public class TeamBHttpServer {
         System.out.println("Graph loaded: 31 nodes, 60 edges.");
     }
 
-    static class HealthHandler implements HttpHandler {
-        @Override
-        public void handle(HttpExchange ex) throws IOException {
-            if (!"GET".equals(ex.getRequestMethod())) {
-                sendJson(ex, 405, "{\"error\":\"Method not allowed\"}");
-                return;
-            }
-            sendJson(ex, 200,
-                "{\"status\":\"ok\",\"service\":\"team-b-routing\",\"graphVersion\":\""
-                + graph.getGraphVersion() + "\"}");
+static class HealthHandler implements HttpHandler {
+    @Override
+    public void handle(HttpExchange ex) throws IOException {
+        String method = ex.getRequestMethod();
+
+        String response =
+            "{\"status\":\"ok\",\"service\":\"team-b-routing\",\"graphVersion\":\""
+            + graph.getGraphVersion() + "\"}";
+
+        if ("HEAD".equals(method)) {
+            ex.getResponseHeaders().set(
+                "Content-Type", "application/json; charset=UTF-8"
+            );
+            ex.getResponseHeaders().set(
+                "Access-Control-Allow-Origin", "*"
+            );
+
+            // HEAD returns the same status as GET, but no response body.
+            ex.sendResponseHeaders(200, -1);
+            ex.close();
+            return;
         }
+
+        if (!"GET".equals(method)) {
+            sendJson(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+
+        sendJson(ex, 200, response);
     }
+}
 
     static class RouteHandler implements HttpHandler {
         @Override
