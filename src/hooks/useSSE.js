@@ -28,10 +28,20 @@ const es = new EventSource(`${import.meta.env.VITE_API_BASE_URL}/api/stream?user
 
       es.addEventListener('notification', (e) => {
         try {
-          const data = JSON.parse(e.data);
-          const list = Array.isArray(data) ? data : [data];
-          setEvents((prev) => [...list, ...prev].slice(0, 50));
-          setLastEvent(list[0] || null);
+const data = JSON.parse(e.data);
+const list = Array.isArray(data) ? data : [data];
+
+const normalizedList = list.map((item) => ({
+  notificationId: item.notificationId ?? item.NotificationId,
+  bookingId: item.bookingId ?? item.BookingId,
+  message: item.message ?? item.Message,
+  createdAt: item.createdAt ?? item.CreatedAt,
+  userId: item.userId ?? item.UserId,
+  isRead: item.isRead ?? item.IsRead,
+}));
+
+setEvents((prev) => [...normalizedList, ...prev].slice(0, 50));
+setLastEvent(normalizedList[normalizedList.length - 1] || null);
         } catch {
           // ignore malformed
         }
