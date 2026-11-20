@@ -62,6 +62,22 @@ function isFutureDate(dateString) {
   return dt.getTime() >= today.getTime();
 }
 
+function isPastBookingSlot(dateString, endTime, now = new Date()) {
+  const [year, month, day] = String(dateString).split("-").map(Number);
+  const [hours, minutes] = String(endTime).split(":").map(Number);
+
+  if (
+    !year || !month || !day ||
+    Number.isNaN(hours) || Number.isNaN(minutes)
+  ) {
+    return false;
+  }
+
+  const slotEnd = new Date(year, month - 1, day, hours, minutes);
+
+  return now.getTime() >= slotEnd.getTime();
+}
+
 function getStatusStyles(status, isPast = false) {
   const s = String(status).toLowerCase();
   
@@ -77,7 +93,7 @@ function getStatusStyles(status, isPast = false) {
   if (isPast && s === "waitlisted") {
     return { 
       className: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border border-orange-200 dark:border-orange-800", 
-      label: "Expired" 
+      label: "Request Expired" 
     };
   }
 
@@ -115,6 +131,7 @@ export default function BookingStatusPage({ user, onLogout }) {
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [clockNow, setClockNow] = useState(() => new Date());
   const [error, setError] = useState(false);
   const [activeTab, setActiveTab] = useState("All");
   const [cancelError, setCancelError] = useState("");
@@ -153,6 +170,13 @@ const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings?${par
     load();
     return () => controller.abort();
   }, [userId, reloadKey]);
+  useEffect(() => {
+  const timer = window.setInterval(() => {
+    setClockNow(new Date());
+  }, 30000);
+
+  return () => window.clearInterval(timer);
+}, []);
 
   function dismissBanner() {
     const next = new URLSearchParams(searchParams);
@@ -384,7 +408,7 @@ const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/bookings/${enc
             <ul className="space-y-3">
               {visible.map((b) => {
                 const future = isFutureDate(b.date);
-                const isPast = !future;
+                const isPast = isPastBookingSlot(b.date, b.endTime, clockNow);
                 
                 // Pass the isPast flag to the badge logic
                 const badge = getStatusStyles(b.status, isPast);
